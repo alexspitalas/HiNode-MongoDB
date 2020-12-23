@@ -1,7 +1,5 @@
 package edu.csd.auth.utils;
-
 import org.bson.Document;
-import com.google.common.reflect.TypeToken;
 import edu.csd.auth.models.SingleTableModel;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,9 +22,9 @@ public class DiaNode
         this.vid = vid;
         this.start = "0";
         this.end = String.valueOf(Integer.MAX_VALUE);
-        this.attributes = new HashMap<String, List<Interval>>();
-        this.outgoing_edges = new HashMap<String, List<Edge>>();
-        this.incoming_edges = new HashMap<String, List<Edge>>();
+        this.attributes = new HashMap<>();
+        this.outgoing_edges = new HashMap<>();
+        this.incoming_edges = new HashMap<>();
     }
 
     public DiaNode(String vid, String start, String end, HashMap<String, List<Interval>> attributes, HashMap<String, List<Edge>> outgoing_edges, HashMap<String, List<Edge>> incoming_edges)
@@ -44,17 +42,18 @@ public class DiaNode
         this.vid = vid;
         this.start = start;
         this.end = end;
-        this.attributes = new HashMap<String, List<Interval>>();
-        this.outgoing_edges = new HashMap<String, List<Edge>>();
-        this.incoming_edges = new HashMap<String, List<Edge>>();
+        this.attributes = new HashMap<>();
+        this.outgoing_edges = new HashMap<>();
+        this.incoming_edges = new HashMap<>();
     }
 
     public DiaNode(Document doc)
     {
-        this.vid = doc.getString("vid");
-        this.start = doc.getString("start");
-        this.end = doc.getString("end");
-        this.attributes = new HashMap<String, List<Interval>>();
+        Document id = (Document) doc.get("_id");
+        this.vid = id.getString("vid");
+        this.start = id.getString("start");
+        this.end = id.getString("end");
+        this.attributes = new HashMap<>();
 
         for (Map.Entry<String, Object> def : doc.entrySet()) {
             if (def.getKey().equals("_id") || def.getKey().equals("vid") || def.getKey().equals("start") || def.getKey().equals("end") || def.getKey().equals("incoming_edges") || def.getKey().equals("outgoing_edges")) // We assume that every column apart from vid, start, end and the edges hold intervals
@@ -67,7 +66,6 @@ public class DiaNode
 
         Document edgesUDTList =  (Document) doc.get("outgoing_edges");
         this.outgoing_edges = SingleTableModel.convertToEdgeList(edgesUDTList);
-        
 
         edgesUDTList = (Document) doc.get("incoming_edges");
         this.incoming_edges = SingleTableModel.convertToEdgeList(edgesUDTList);

@@ -1,6 +1,5 @@
 package edu.csd.auth.models;
 
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.*;
 import com.mongodb.client.model.*;
@@ -29,7 +28,7 @@ public class SingleTableModel implements DataModel
 {
     private String keyspace ;
     private MongoClient client ;
-    private MongoDatabase database ;
+    private MongoDatabase database;
     
     public static String bb_to_str(ByteBuffer buffer)
     {
@@ -142,12 +141,13 @@ public class SingleTableModel implements DataModel
         tStart = System.nanoTime();
         for (Document row : cursor)
         {
-            int rowstart = Integer.parseInt(row.getString("start"));
-            int rowend = Integer.parseInt(row.getString("end"));
+            Document id = (Document) row.get("_id");
+            int rowstart = Integer.parseInt(id.getString("start"));
+            int rowend = Integer.parseInt(id.getString("end"));
             
             if (rowend <= Integer.parseInt(first) || Integer.parseInt(last) < rowstart) // Assumes correct intervals as input
                 continue;
-            String vid = row.getString("vid");
+            String vid = id.getString("vid");
             int start = Math.max(Integer.parseInt(first), rowstart); // Only report values that are after both "first" and the diachronic node's "rowstart"
             int end = Math.min(Integer.parseInt(last), rowend); // Only report values that are before both "last" and the diachronic node's "rowend"
             for (int i = start; i <= end; i++)
@@ -178,7 +178,6 @@ public class SingleTableModel implements DataModel
         Map<String, Edge> incoming_edges_current = new HashMap<>();
         Map<String, Edge> outgoing_edges_current = new HashMap<>();
 
-        
         Document edgesUDTListIn = (Document) vertexRow.get("incoming_edges");
         Map<String, List<Edge>> incoming_edges_diachronic = convertToEdgeList(edgesUDTListIn);
 
@@ -228,12 +227,12 @@ public class SingleTableModel implements DataModel
         tStart = System.nanoTime();
         for (Document row : cursor)
         {
-            int rowstart = Integer.parseInt(row.getString("start"));
-            int rowend = Integer.parseInt(row.getString("end"));
+            Document id = (Document) row.get("_id");
+            int rowstart = Integer.parseInt(id.getString("start"));
+            int rowend = Integer.parseInt(id.getString("end"));
             
             if (rowend < Integer.parseInt(first) || Integer.parseInt(last) < rowstart) // Assumes correct intervals as input
                 continue;
-
             DiaNode dn = new DiaNode(row);
             dn.keepValuesInInterval(first, last);
             dianodes.add(dn);
@@ -264,15 +263,6 @@ public class SingleTableModel implements DataModel
             else
                 vertexCounts.put(""+i, (double) instanceVIDs.size());
         }
-        
-
-        tStart = System.nanoTime();
-
-
-        tEnd = System.nanoTime();
-        tDelta = tEnd - tStart;
-        double elapsedSeconds = tDelta / 1000000000.0;
-        System.out.println("Time required for retrieving the relevant alive nodes: " + elapsedSeconds + " seconds.");
 
         tStart = System.nanoTime();
         for (String vertex : allVertices) {
@@ -280,11 +270,12 @@ public class SingleTableModel implements DataModel
 
             for (Document row : cursor) // For each diachronic node
             {
-                String rowend = row.getString("end");
+                Document id = (Document) row.get("_id");
+                String rowend = id.getString("end");
                 if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
                     continue;
 
-                String rowstart = row.getString("start");
+                String rowstart = id.getString("start");
 
                 int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
                 int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
@@ -325,7 +316,7 @@ public class SingleTableModel implements DataModel
         }
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
-        elapsedSeconds = tDelta / 1000000000.0;
+        double elapsedSeconds = tDelta / 1000000000.0;
         System.out.println("Time required for processing and evaluating the AvgDeg query: " + elapsedSeconds + " seconds.");
         
         return results;
@@ -338,7 +329,6 @@ public class SingleTableModel implements DataModel
 
         HashMap<String, Double> edgeCounts = new HashMap<>(); // Holds the total edge count at any point in the query range (e.g. [(30,2), (31,4), ..., (50,22)]
         HashMap<String, Double> vertexCounts = new HashMap<>(); // Holds the total vertex count at any point in the query range (e.g. [(30,4), (31,3), ..., (50,16)]
-        
 
         for (int i = Integer.parseInt(first); i <= Integer.parseInt(last); i++)
             vertexCounts.put(""+i, 0.0);
@@ -419,12 +409,13 @@ public class SingleTableModel implements DataModel
 
         for (Document row : resultSetFuture) // For each diachronic node
         {
-            String rowend = row.getString("end");
+            Document id = (Document) row.get("_id");
+            String rowend = id.getString("end");
 
             if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
                 continue;
 
-            String rowstart = row.getString("start");
+            String rowstart = id.getString("start");
 
             int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
             int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
@@ -462,7 +453,6 @@ public class SingleTableModel implements DataModel
             }
         }
 
-        
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
         elapsedSeconds = tDelta / 1000000000.0;
@@ -523,7 +513,9 @@ public class SingleTableModel implements DataModel
                 degreeDistr.put(degree.toString(), (count == null) ? 1 : count + 1);
                 results.put(instance, degreeDistr);
             }
+
         }
+
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
         double elapsedSeconds = tDelta / 1000000000.0;
@@ -537,7 +529,6 @@ public class SingleTableModel implements DataModel
         List<String> results = new ArrayList<>();
         
         tStart = System.nanoTime();
-
         Document row= database.getCollection("dianode").find(Filters.eq("_id.vid",vid)).projection(Projections.include( "outgoing_edges")).first();
 
 
@@ -573,7 +564,6 @@ public class SingleTableModel implements DataModel
     @Override
     public DiaNode getVertexHistory(String vid, String first, String last) 
     {
-        // We only expect one row
         Document row = database.getCollection("dianode").find(Filters.eq("_id.vid",vid)).first();
         if (row == null)
             return new DiaNode(vid);
@@ -586,10 +576,10 @@ public class SingleTableModel implements DataModel
     
     public Vertex getVertexInstance(String vid, String timestamp)
     {
-        Document row = database.getCollection("dianode").find(Filters.eq("_id.vid",vid)).first();
-        // We only expect one row
 
-        DiaNode dn = new DiaNode(row);
+        Document row = database.getCollection("dianode").find(Filters.eq("_id.vid",vid)).first();
+
+        DiaNode dn = new DiaNode(row);   
         Vertex ver = dn.convertToVertex(timestamp);
         
         return ver;
@@ -613,9 +603,9 @@ public class SingleTableModel implements DataModel
             {
                 name.add(interval.toDoc());
             }
-            Document doc = new Document().append("vid",ver.getVid())
+            Document doc = new Document("_id", new Document().append("vid",ver.getVid())
                     .append("start", ver.getStart())
-                    .append("end", ver.getEnd())
+                    .append("end", ver.getEnd()))
                     .append("name", name )
                     .append("color", color);
             database.getCollection("dianode").insertOne(doc);
@@ -626,8 +616,9 @@ public class SingleTableModel implements DataModel
     @Override
     public void insertEdge(String sourceID, String targetID, String start, String end, String label, String weight)
     {
-        // First, insert the edge as an outgoing edge
+
         Document vertexRow = database.getCollection("dianode").find(Filters.eq("_id.vid",sourceID)).first();
+        Document id = (Document) vertexRow.get("_id");
         Document edgesUDTList =(Document) vertexRow.get("outgoing_edges");
 
         Map<String, List<Edge>> edges = convertToEdgeList(edgesUDTList);
@@ -639,8 +630,8 @@ public class SingleTableModel implements DataModel
             database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
-                                    Filters.eq("_id.vid",sourceID),Filters.eq("_id.start",vertexRow.getString("start"))),
-                            Filters.eq("_id.end",vertexRow.getString("end") ))
+                                    Filters.eq("_id.vid",sourceID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
                             , Updates.set("outgoing_edges", new Document().append(targetID,out_edges)));
         }
         else
@@ -657,12 +648,14 @@ public class SingleTableModel implements DataModel
                 out_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
 
             edgesUDTList.put(targetID, out_edges);
+
             database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
-                                    Filters.eq("_id.vid",sourceID),Filters.eq("_id.start",vertexRow.getString("start"))),
-                            Filters.eq("_id.end",vertexRow.getString("end") ))
+                                    Filters.eq("_id.vid",sourceID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
                     , Updates.set("outgoing_edges", edgesUDTList));
+
         }
         
         // Then, insert the edge as an incoming edge
@@ -681,8 +674,8 @@ public class SingleTableModel implements DataModel
             database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
-                                    Filters.eq("_id.vid",targetID),Filters.eq("_id.start",vertexRow.getString("start"))),
-                            Filters.eq("_id.end",vertexRow.getString("end") ))
+                                    Filters.eq("_id.vid",targetID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
                     , Updates.set("incoming_edges", new Document().append(sourceID,in_edges)));
 
         }
@@ -705,8 +698,8 @@ public class SingleTableModel implements DataModel
             database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
-                                    Filters.eq("_id.vid",targetID),Filters.eq("_id.start",vertexRow.getString("start"))),
-                            Filters.eq("_id.end",vertexRow.getString("end") ))
+                                    Filters.eq("_id.vid",targetID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
                     , Updates.set("incoming_edges", edgesUDTList));
 
         }
@@ -745,6 +738,7 @@ public class SingleTableModel implements DataModel
                 
                 if (line.equals("graph 1 0") || line.equals("graph 1")) // As soon as we've reached the second snapshot, stop
                     break;
+                
 
                 else if (line.startsWith("vertex"))
                 {
@@ -808,6 +802,7 @@ public class SingleTableModel implements DataModel
                     List<Document> in_edges = new ArrayList<>();
                     in_edges.add(allIncEdges.get(source).toDoc());
                     incoming.append(source,in_edges);
+
                 }
 
                 for (String target : allOutEdges.keySet())
@@ -816,6 +811,7 @@ public class SingleTableModel implements DataModel
                     out_edges.add(allOutEdges.get(target).toDoc());
                     outgoing.append(target,out_edges);
                 }
+
                 List<Document> nameTemp = new ArrayList<>();
                 nameTemp.add(new Document().append("value", name)
                         .append("start","00000000")
@@ -825,9 +821,9 @@ public class SingleTableModel implements DataModel
                         .append("start","00000000")
                         .append("end", ""+ DataModel.padWithZeros(""+snap_count)));
 
-                Document doc = new Document().append("vid",ver.getVid())
+                Document doc = new Document("_id",new Document().append("vid",ver.getVid())
                         .append("start", start)
-                        .append("end", end)
+                        .append("end", end))
                         .append("name", nameTemp)
                         .append("color", colorTemp)
                         .append("incoming_edges",incoming)
@@ -865,10 +861,7 @@ public class SingleTableModel implements DataModel
                 
                 if (!passedFirstSnapshot || line.startsWith("mkdir") || line.startsWith("cd") || line.startsWith("time") || line.startsWith("string") || line.startsWith("double") || line.startsWith("shutdown"))
                     continue;
-                
-                //if (line.equals("use "+keyspace+""))
-                    //session.execute("USE "+keyspace+";");
-                
+
                 if (line.startsWith("graph"))
                 {
                     System.out.println(line);
@@ -930,13 +923,12 @@ public class SingleTableModel implements DataModel
     @Override
     public void updateVertexAttribute(String vid, String attrName, String attrValue, String timestamp)
     {
-
         Document vertexRow = database.getCollection("dianode").find(Filters.eq("_id.vid",vid)).first();
         List<Document> attrUDTList = vertexRow.getList(attrName, Document.class);
         List<Interval> attrList = convertToIntervals(attrUDTList);
         
         Interval toBeDeleted = attrList.get(attrList.size()-1);
-
+        //NOT YET MADE
         /*
         // Remove the old interval
         session.execute("UPDATE "+keyspace+".dianode SET " + attrName + " = " + attrName + " - ["
@@ -956,6 +948,8 @@ public class SingleTableModel implements DataModel
 
     @Override
     public void useKeyspace() 
-    { }
+    {
+        //this.session.execute("USE "+keyspace+";");
+    }
 
 }
