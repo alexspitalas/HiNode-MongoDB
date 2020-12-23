@@ -9,8 +9,5 @@
         <module name="mongo-mvn" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="mongo-mvn" target="10" />
-    </bytecodeTargetLevel>
   </component>
 </project>
