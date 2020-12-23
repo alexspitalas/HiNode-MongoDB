@@ -1,5 +1,18 @@
 package edu.csd.auth.models;
-
+/*
+import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
+*/
+//import com.google.common.util.concurrent.FutureCallback;
+//import com.google.common.util.concurrent.Futures;
 import static edu.csd.auth.models.DataModel.getRandomString;
 
 import com.mongodb.BasicDBObject;
@@ -92,17 +105,16 @@ public class MultipleTablesModel implements DataModel
 
             database.createCollection("vertex_color");
 
-            index.put("_id.vid", 1);
+            index.put("vid", 1);
+            index.put("timestamp", -1);
             database.getCollection("vertex").createIndex(index);
-            index.put("_id.timestamp", -1);
             database.getCollection("vertex_color").createIndex(index);
             database.getCollection("vertex_name").createIndex(index);
 
             database.createCollection("edge_outgoing");
             index.clear();
-            index.put("_id.sourceID", 1);
-            database.getCollection("edge_outgoing").createIndex(index);
-            index.put("_id.start", -1);
+            index.put("sourceID", 1);
+            index.put("start", -1);
             database.getCollection("edge_outgoing").createIndex(index);
 
             database.createCollection("edge_label_outgoing");
@@ -111,23 +123,23 @@ public class MultipleTablesModel implements DataModel
 
             database.createCollection("edge_incoming");
             index.clear();
-            index.put("_id.targetID", 1);
-            index.put("_id.start", -1);
+            index.put("targetID", 1);
+            index.put("start", -1);
             database.getCollection("edge_incoming").createIndex(index);
 
             database.createCollection("edge_label_incoming");
 
             database.createCollection("edge_weight_incoming");
             index.clear();
-            index.put("_id.targetID", 1);
-            index.put("_id.timestamp", -1);
+            index.put("targetID", 1);
+            index.put("timestamp", -1);
             database.getCollection("edge_label_outgoing").createIndex(index);
             database.getCollection("edge_weight_outgoing").createIndex(index);
             database.getCollection("edge_label_incoming").createIndex(index);
             database.getCollection("edge_weight_incoming").createIndex(index);
             index.clear();
-            index.put("_id.sourceID", 1);
-            index.put("_id.timestamp", -1);
+            index.put("sourceID", 1);
+            index.put("timestamp", -1);
             database.getCollection("edge_label_outgoing").createIndex(index);
             database.getCollection("edge_weight_outgoing").createIndex(index);
             database.getCollection("edge_label_incoming").createIndex(index);
@@ -148,6 +160,7 @@ public class MultipleTablesModel implements DataModel
 
         tStart = System.nanoTime();
         FindIterable<Document> cursor  = database.getCollection("vertex").find().noCursorTimeout(true);
+
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
         double elapsedSeconds = tDelta / 1000000000.0;
@@ -156,16 +169,15 @@ public class MultipleTablesModel implements DataModel
         tStart = System.nanoTime();
         for (Document row : cursor)
         {
-            Document id = (Document) row.get("_id");
-            int rowstart = Integer.parseInt(id.getString("start"));
-            int rowend = Integer.parseInt(id.getString("end"));
+            int rowstart = Integer.parseInt(row.getString("start"));
+            int rowend = Integer.parseInt(row.getString("end"));
 
             if (rowend < Integer.parseInt(first) || Integer.parseInt(last) < rowstart) // Assumes correct intervals as input
             {
                 continue;
             }
 
-            String vid = id.getString("vid");
+            String vid = row.getString("vid");
             int start = Math.max(Integer.parseInt(first), rowstart); // Only report values that are after both "first" and the diachronic node's "rowstart"
             int end = Math.min(Integer.parseInt(last), rowend); // Only report values that are before both "last" and the diachronic node's "rowend"
             for (int i = start; i <= end; i++)
@@ -193,13 +205,11 @@ public class MultipleTablesModel implements DataModel
     {
         long tStart = System.nanoTime();
         FindIterable<Document> result  = database.getCollection("edge_outgoing").find();
-
         ConcurrentLinkedQueue<Document> rows = new ConcurrentLinkedQueue<>();
         for(Document row: result)
         {
-            Document id = (Document) row.get("_id");
-            String rowstart = id.getString("start");
-            String rowend = id.getString("end");
+            String rowstart = row.getString("start");
+            String rowend = row.getString("end");
 
             if (Integer.parseInt(rowend) < Integer.parseInt(first) || Integer.parseInt(last) < Integer.parseInt(rowstart))
             {
@@ -228,20 +238,19 @@ public class MultipleTablesModel implements DataModel
 
         // First retrieve the outgoing edges of the vertex
         FindIterable<Document> result  = database.getCollection("edge_outgoing").find(
-                Filters.and(Filters.eq("_id.sourceID",vid), Filters.lte("_id.start", timestamp)));
+                Filters.and(Filters.eq("sourceID",vid), Filters.lte("start", timestamp)));
 
         Map<String, Edge> outgoing_edges = new HashMap<>();
 
         for (Document row : result)
         {
-            Document id = (Document) row.get("_id");
-            String end = id.getString("end");
+            String end = row.getString("end");
             if (Integer.parseInt(timestamp) > Integer.parseInt(end))
             {
                 continue;
             }
-            String start = id.getString("start");
-            String targetID = id.getString("targetID");
+            String start = row.getString("start");
+            String targetID = row.getString("targetID");
             TreeMap<String, String> out_labels = all_outgoing_labels.get(targetID);
             String label = getLastValue(out_labels, timestamp);
             TreeMap<String, String> out_weights = all_outgoing_weights.get(targetID);
@@ -253,20 +262,19 @@ public class MultipleTablesModel implements DataModel
 
         // Then retrieve the incoming edges of the vertex
         result  = database.getCollection("edge_incoming").find(
-                Filters.and(Filters.eq("_id.targetID",vid), Filters.lte("_id.start", timestamp)));
+                Filters.and(Filters.eq("targetID",vid), Filters.lte("start", timestamp)));
 
         Map<String, Edge> incoming_edges = new HashMap<>();
 
         for (Document row : result)
         {
-            Document id = (Document) row.get("_id");
-            String end = id.getString("end");
+            String end = row.getString("end");
             if (Integer.parseInt(timestamp) > Integer.parseInt(end))
             {
                 continue;
             }
-            String start = id.getString("start");
-            String sourceID = id.getString("sourceID");
+            String start = row.getString("start");
+            String sourceID = row.getString("sourceID");
             TreeMap<String, String> in_labels = all_incoming_labels.get(sourceID);
             String label = getLastValue(in_labels, timestamp);
             TreeMap<String, String> in_weights = all_incoming_weights.get(sourceID);
@@ -287,22 +295,21 @@ public class MultipleTablesModel implements DataModel
         String typeID;
         if (direction.equals("outgoing"))
         {
-            typeID = "_id.sourceID";
+            typeID = "sourceID";
         } else
         {
-            typeID = "_id.targetID";
+            typeID = "targetID";
         }
 
         FindIterable<Document> result  = database.getCollection("edge_" + attribute + "_" + direction).find(
-                Filters.and(Filters.eq( typeID, vid), Filters.lte("_id.timestamp", timestamp)));
+                Filters.and(Filters.eq( typeID, vid), Filters.lte("timestamp", timestamp)));
         Map<String, TreeMap<String, String>> all_attribute = new HashMap<>(); // [targetID, [timestamp,label] ]
 
 
         for (Document row : result)
         {
-            Document id = (Document) row.get("_id");
             String label = row.getString(attribute);
-            String rowtimestamp = id.getString("timestamp");
+            String rowtimestamp = row.getString("timestamp");
             if (direction.equals("outgoing")) //Reversed because...
             {
                 typeID = "targetID";
@@ -310,7 +317,7 @@ public class MultipleTablesModel implements DataModel
             {
                 typeID = "sourceID";
             }
-            String ID = id.getString(typeID);
+            String ID = row.getString(typeID);
 
             if (!all_attribute.containsKey(ID))
             {
@@ -348,29 +355,18 @@ public class MultipleTablesModel implements DataModel
             }
         }
 
-
-        tStart = System.nanoTime();
-
-
-
-        tEnd = System.nanoTime();
-        tDelta = tEnd - tStart;
-        double elapsedSeconds = tDelta / 1000000000.0;
-        System.out.println("Time required for retrieving the edges from the relevant alive nodes: " + elapsedSeconds + " seconds.");
-
         tStart = System.nanoTime();
         for (String vertex : allVertices) {
-            FindIterable<Document> cursor = database.getCollection("edge_outgoing").find(Filters.eq("_id.sourceID", vertex)).projection(Projections.include("_id.start", "_id.end","_id.sourceID")).noCursorTimeout(true);
+            FindIterable<Document> cursor = database.getCollection("edge_outgoing").find(Filters.eq("sourceID", vertex)).projection(Projections.include("start", "end","sourceID")).noCursorTimeout(true);
 
             for (Document row : cursor) {
-                Document id = (Document) row.get("_id");
-                String rowend = id.getString("end");
+                String rowend = row.getString("end");
                 if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
                 {
                     continue;
                 }
 
-                String rowstart = id.getString("start");
+                String rowstart = row.getString("start");
                 int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
                 int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
                 for (int i = start; i <= end; i++) // Increase the edge count for any edges found overlapping or intersecting the [start,end] range specified before
@@ -399,7 +395,7 @@ public class MultipleTablesModel implements DataModel
         }
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
-        elapsedSeconds = tDelta / 1000000000.0;
+        double elapsedSeconds = tDelta / 1000000000.0;
         System.out.println("Time required for processing and evaluating the AvgDeg query: " + elapsedSeconds + " seconds.");
         return results;
     }
@@ -431,9 +427,8 @@ public class MultipleTablesModel implements DataModel
         tStart = System.nanoTime();
         for (Document row : rows)
         {
-            Document id = (Document) row.get("_id");
-            String rowend = id.getString("end");
-            String rowstart = id.getString("start");
+            String rowend = row.getString("end");
+            String rowstart = row.getString("start");
 
             int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
             int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
@@ -894,27 +889,18 @@ public class MultipleTablesModel implements DataModel
         ArrayList<String> allVertices = vertices.get("allVertices");
 
         tStart = System.nanoTime();
-
-
-        tEnd = System.nanoTime();
-        tDelta = tEnd - tStart;
-        double elapsedSeconds = tDelta / 1000000000.0;
-        System.out.println("Time required for retrieving the edges from the relevant alive nodes: " + elapsedSeconds + " seconds.");
-
-        tStart = System.nanoTime();
         for (String vertex : allVertices) {
-            FindIterable<Document> cursor = database.getCollection("edge_outgoing").find(Filters.eq("_id.sourceID", vertex)).projection(Projections.include("_id.start", "_id.end","_id.sourceID")).noCursorTimeout(true);
+            FindIterable<Document> cursor = database.getCollection("edge_outgoing").find(Filters.eq("sourceID", vertex)).projection(Projections.include("start", "end","sourceID")).noCursorTimeout(true);
 
             for (Document row : cursor) {
-                Document id = (Document) row.get("_id");
-                String rowend = id.getString("end");
+                String rowend = row.getString("end");
                 if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
                 {
                     continue;
                 }
 
-                String rowstart = id.getString("start");
-                String vid = id.getString("sourceID");
+                String rowstart = row.getString("start");
+                String vid = row.getString("sourceID");
 
                 int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
                 int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
@@ -932,7 +918,6 @@ public class MultipleTablesModel implements DataModel
             }
         }
         System.out.println("First map finished.");
-
         HashMap<String, HashMap<String, Integer>> results = new HashMap<>();
         for (String s_vid : vertexDegreeInAllInstances.keySet())
         {
@@ -951,9 +936,12 @@ public class MultipleTablesModel implements DataModel
                 results.put(instance.toString(),degreeDistr);
             }
         }
+        System.out.println("Second map finished.");
+
+
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
-        elapsedSeconds = tDelta / 1000000000.0;
+        double elapsedSeconds = tDelta / 1000000000.0;
         System.out.println("Time required for processing and evaluating the DegDistr query: " + elapsedSeconds + " seconds.");
         return results;
     }
@@ -970,15 +958,14 @@ public class MultipleTablesModel implements DataModel
         tStart = System.nanoTime();
         for (Document row : rows)
         {
-            Document id = (Document) row.get("_id");
-            String rowend = id.getString("end");
+            String rowend = row.getString("end");
             if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
             {
                 continue;
             }
 
-            String rowstart = id.getString("start");
-            String vid = id.getString("sourceID");
+            String rowstart = row.getString("start");
+            String vid = row.getString("sourceID");
 
             int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
             int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
@@ -1001,11 +988,11 @@ public class MultipleTablesModel implements DataModel
         HashMap<String, HashMap<String, Integer>> results = new HashMap<>();
         for (String s_vid : vertexDegreeInAllInstances.keySet())
         {
-            HashMap<Integer, Integer> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
+            HashMap<String, Double> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
 
-            for (Integer instance : s_vertexDegrees.keySet())
+            for (String instance : s_vertexDegrees.keySet())
             {
-                Integer degree = s_vertexDegrees.get(instance);
+                Double degree = s_vertexDegrees.get(instance);
                 HashMap<String, Integer> degreeDistr = results.get(instance.toString());
                 if (degreeDistr ==null)
                 {
@@ -1013,7 +1000,7 @@ public class MultipleTablesModel implements DataModel
                 }
                 Integer count = degreeDistr.get(degree.toString());
                 degreeDistr.put(degree.toString(), (count == null) ? 1 : count + 1);
-                results.put(instance.toString(),degreeDistr);
+                results.put(instance,degreeDistr);
             }
         }
         tEnd = System.nanoTime();
@@ -1027,12 +1014,11 @@ public class MultipleTablesModel implements DataModel
     {
         ArrayList<Integer> instances = new ArrayList<>();
         FindIterable<Document> result = database.getCollection("vertex_"+ attr).find(Filters.and(
-                Filters.eq("_id.vid",vid), Filters.lte("_id.timestamp",last ))).noCursorTimeout(true);
+                Filters.eq("vid",vid), Filters.lte("timestamp",last ))).noCursorTimeout(true);
         TreeMap<String, String> attrPerInstance = new TreeMap<>();
         for(Document row: result)
         {
-            Document id = (Document) row.get("_id");
-            String timestamp = id.getString("timestamp");
+            String timestamp = row.getString("timestamp");
 
             attrPerInstance.put(timestamp, row.getString(attr));
             instances.add(Integer.valueOf(timestamp));
@@ -1088,9 +1074,7 @@ public class MultipleTablesModel implements DataModel
 
         tStart = System.nanoTime();
         FindIterable<Document> result = database.getCollection("edge_outgoing").find(Filters.and(
-                Filters.eq("id_sourceID",vid), Filters.lte("_id.start",last )))
-                .projection(Projections.include("_id.end", "_id.targetID")).noCursorTimeout(true);
-
+                Filters.eq("sourceID",vid), Filters.lte("start",last ))).projection(Projections.include("end", "targetID")).noCursorTimeout(true);
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
         double elapsedSeconds = tDelta / 1000000000.0;
@@ -1099,13 +1083,12 @@ public class MultipleTablesModel implements DataModel
         tStart = System.nanoTime();
         for (Document row : result)
         {
-            Document id = (Document) row.get("_id");
-            String end = id.getString("end");
+            String end = row.getString("end");
             if (Integer.parseInt(first) > Integer.parseInt(end))
             {
                 continue;
             }
-            String targetID = id.getString("targetID");
+            String targetID = row.getString("targetID");
 
             results.add(targetID);
         }
@@ -1121,11 +1104,10 @@ public class MultipleTablesModel implements DataModel
     {
         DiaNode dn = new DiaNode(vid);
         FindIterable<Document> result = database.getCollection("vertex").find(
-                Filters.eq("_id.vid",vid)).projection(Projections.include("_id.start", "_id.end")).noCursorTimeout(true);
+                Filters.eq("vid",vid)).projection(Projections.include("start", "end")).noCursorTimeout(true);
         Document row = result.first();
-        Document id = (Document) row.get("_id");
-        String rowstart = id.getString("start");
-        String rowend = id.getString("end");
+        String rowstart = row.getString("start");
+        String rowend = row.getString("end");
         dn.setStart(rowstart);
         dn.setEnd(rowend);
 
@@ -1138,17 +1120,16 @@ public class MultipleTablesModel implements DataModel
         Map<String, TreeMap<String, String>> all_outgoing_labels = getAttributeOfDirectedEdge(vid, last, "label", "outgoing"); // [target, [timestamp, label]]
         Map<String, TreeMap<String, String>> all_outgoing_weights = getAttributeOfDirectedEdge(vid, last, "weight", "outgoing"); // [target, [timestamp, weight]]
         result = database.getCollection("edge_outgoing").find(Filters.and(
-                Filters.eq("_id.sourceID",vid), Filters.lte("_id.start",last ))).noCursorTimeout(true);
+                Filters.eq("sourceID",vid), Filters.lte("start",last ))).noCursorTimeout(true);
         for (Document edge : result)
         {
-            Document idE = (Document) edge.get("_id");
-            String end = idE.getString("end");
+            String end = edge.getString("end");
             if (Integer.parseInt(end) < Integer.parseInt(first))
             {
                 continue;
             }
-            String start = idE.getString("start");
-            String targetID = idE.getString("targetID");
+            String start = edge.getString("start");
+            String targetID = edge.getString("targetID");
             TreeMap<String, String> out_labels = all_outgoing_labels.get(targetID);
             if (out_labels == null) // Hack. There shouldn't be an edge without the corresponding attributes.
             {
@@ -1168,20 +1149,19 @@ public class MultipleTablesModel implements DataModel
         // Then retrieve the incoming edges of the vertex for [first, last) along with their attributes
         Map<String, List<Edge>> incoming_edges = new HashMap<>();
         result = database.getCollection("edge_incoming").find(Filters.and(
-                Filters.eq("_id.targetID",vid), Filters.lte("_id.start",last ))).noCursorTimeout(true);
+                Filters.eq("targetID",vid), Filters.lte("start",last ))).noCursorTimeout(true);
 
         Map<String, TreeMap<String, String>> all_incoming_labels = getAttributeOfDirectedEdge(vid, last, "label", "incoming"); // [source, [timestamp, label]]
         Map<String, TreeMap<String, String>> all_incoming_weights = getAttributeOfDirectedEdge(vid, last, "weight", "incoming"); // [source, [timestamp, weight]]        
         for (Document edge : result)
         {
-            Document idE = (Document) edge.get("_id");
-            String end = idE.getString("end");
+            String end = edge.getString("end");
             if (Integer.parseInt(end) < Integer.parseInt(first))
             {
                 continue;
             }
-            String start = idE.getString("start");
-            String sourceID = idE.getString("sourceID");
+            String start = edge.getString("start");
+            String sourceID = edge.getString("sourceID");
             TreeMap<String, String> in_labels = all_incoming_labels.get(sourceID);
             if (in_labels == null) // Hack. There shouldn't be an edge without the corresponding attributes.
             {
@@ -1210,8 +1190,8 @@ public class MultipleTablesModel implements DataModel
 
     public Vertex getVertexInstance(String vid, String timestamp)
     {
-        Map<String, String> vertexNameMap = read("vertex_name", "_id.vid", vid, timestamp);
-        Map<String, String> vertexColorMap = read("vertex_color", "_id.vid", vid, timestamp);
+        Map<String, String> vertexNameMap = read("vertex_name", "vid", vid, timestamp);
+        Map<String, String> vertexColorMap = read("vertex_color", "vid", vid, timestamp);
         Map<String, Map<String, Edge>> allEdges = getAllEdgesOfVertex(vid, timestamp);
 
         Vertex v = new Vertex();
@@ -1229,9 +1209,7 @@ public class MultipleTablesModel implements DataModel
     {
         try
         {
-
             database.getCollection(table).insertOne(values);
-
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -1241,51 +1219,46 @@ public class MultipleTablesModel implements DataModel
     @Override
     public void insertEdge(String sourceID, String targetID, String start, String end, String label, String weight)
     {
-        Document values = new Document().append("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("start", start)
-                .append("end", end)
-                .append("targetID", targetID));
+        Document values = new Document();
+        values.put("start", start);
+        values.put("end", end);
+        values.put("sourceID", sourceID);
+        values.put("targetID", targetID);
         insert("edge_outgoing", values);
         values.clear();
 
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
         values.put("label", label);
+        values.put("timestamp", start);
+        values.put("sourceID", sourceID);
+        values.put("targetID", targetID);
         insert("edge_label_outgoing", values);
         values.clear();
 
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
         values.put("weight", weight);
+        values.put("timestamp", start);
+        values.put("sourceID", sourceID);
+        values.put("targetID", targetID);
         insert("edge_weight_outgoing", values);
         values.clear();
 
-        values = new Document().append("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("start", start)
-                .append("end", end)
-                .append("targetID", targetID));
+        values.put("start", start);
+        values.put("end", end);
+        values.put("sourceID", sourceID);
+        values.put("targetID", targetID);
         insert("edge_incoming", values);
         values.clear();
 
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
         values.put("label", label);
+        values.put("timestamp", start);
+        values.put("sourceID", sourceID);
+        values.put("targetID", targetID);
         insert("edge_label_incoming", values);
         values.clear();
 
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
         values.put("weight", weight);
+        values.put("timestamp", start);
+        values.put("sourceID", sourceID);
+        values.put("targetID", targetID);
         insert("edge_weight_incoming", values);
         values.clear();
     }
@@ -1295,21 +1268,21 @@ public class MultipleTablesModel implements DataModel
     {
         Document values = new Document();
 
-        values.put("_id", new Document().append("vid", vid)
-                .append("start", start)
-                .append("end", end));
+        values.put("vid", vid);
+        values.put("start", start);
+        values.put("end", end);
         insert("vertex", values);
         values.clear();
 
-        values.put("_id", new Document().append("vid",vid)
-                .append("timestamp", start));
+        values.put("vid", vid);
         values.put("name", name);
+        values.put("timestamp", start);
         insert("vertex_name", values);
         values.clear();
 
-        values.put("_id", new Document().append("vid",vid)
-                .append("timestamp", start));
+        values.put("vid", vid);
         values.put("color", color);
+        values.put("timestamp", start);
         insert("vertex_color", values);
         values.clear();
     }
@@ -1584,22 +1557,13 @@ public class MultipleTablesModel implements DataModel
     {
         try
         {
-            //Statement stmt;
-            //Select.Builder selectBuilder;
 
-            //selectBuilder = QueryBuilder.select().all();
-
-            //stmt = selectBuilder.from(table).where(QueryBuilder.eq(keyName, keyValue)).and(QueryBuilder.lte("timestamp", timestamp)).limit(1);
-            //stmt.setConsistencyLevel(READ_CONSISTENCY_LEVEL);
             FindIterable<Document> rs = database.getCollection(table).find(Filters.and(
-                    Filters.eq(keyName,keyValue), Filters.lte("_id.timestamp",timestamp ))).noCursorTimeout(true);
-            //ResultSet rs = session.execute(stmt);
-
+                    Filters.eq(keyName,keyValue), Filters.lte("timestamp",timestamp ))).noCursorTimeout(true);
             HashMap<String, String> resultRow = new HashMap<>();
             // Should be only 1 row
             for (Document row : rs)
             {
-                //ColumnDefinitions cd = row.getColumnDefinitions();
 
                 for ( String def : row.keySet())
                 {
@@ -1740,14 +1704,16 @@ public class MultipleTablesModel implements DataModel
     public void updateVertexAttribute(String vid, String attrName, String attrValue, String timestamp)
     {
         Document values = new Document();
-        values.put("_id", new Document().append("vid",vid).append("timestamp", timestamp));
+        values.put("vid", vid);
         values.put(attrName, attrValue);
+        values.put("timestamp", timestamp);
         insert("vertex_" + attrName, values);
         values.clear();
     }
 
     @Override
     public void useKeyspace()
-    { }
+    {
+    }
 
 }
