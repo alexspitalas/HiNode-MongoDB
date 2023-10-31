@@ -3,6 +3,7 @@ package edu.csd.auth.models;
 import static edu.csd.auth.models.DataModel.getRandomString;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 //import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -1001,11 +1002,11 @@ public class MultipleTablesModel implements DataModel
         HashMap<String, HashMap<String, Integer>> results = new HashMap<>();
         for (String s_vid : vertexDegreeInAllInstances.keySet())
         {
-            HashMap<Integer, Integer> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
+            HashMap<String, Double> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
 
-            for (Integer instance : s_vertexDegrees.keySet())
+            for (String instance : s_vertexDegrees.keySet())
             {
-                Integer degree = s_vertexDegrees.get(instance);
+                Double degree = s_vertexDegrees.get(instance);
                 HashMap<String, Integer> degreeDistr = results.get(instance.toString());
                 if (degreeDistr ==null)
                 {
@@ -1230,7 +1231,7 @@ public class MultipleTablesModel implements DataModel
         try
         {
 
-            database.getCollection(table).insertOne(values);
+            database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).insertOne(values);
 
         } catch (Exception e)
         {

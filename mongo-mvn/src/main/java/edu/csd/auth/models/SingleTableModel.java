@@ -1,7 +1,7 @@
 package edu.csd.auth.models;
 
 import com.mongodb.BasicDBObject;
-
+import com.mongodb.WriteConcern;
 import com.mongodb.client.*;
 import com.mongodb.client.model.*;
 import edu.csd.auth.utils.Edge;
@@ -593,6 +593,7 @@ public class SingleTableModel implements DataModel
         return ver;
         
     }
+
     public void insert(DiaNode ver)
     {
 
@@ -617,7 +618,8 @@ public class SingleTableModel implements DataModel
                     .append("end", ver.getEnd()))
                     .append("name", name )
                     .append("color", color);
-            database.getCollection("dianode").insertOne(doc);
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).insertOne(doc);
+            
         }
 
     }
@@ -636,7 +638,7 @@ public class SingleTableModel implements DataModel
         if (edges.isEmpty())
         {
             out_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
-            database.getCollection("dianode").findOneAndUpdate(
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid",sourceID),Filters.eq("_id.start",id.getString("start"))),
@@ -680,7 +682,7 @@ public class SingleTableModel implements DataModel
         if (edges.isEmpty())
         {
             in_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
-            database.getCollection("dianode").findOneAndUpdate(
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid",targetID),Filters.eq("_id.start",id.getString("start"))),
@@ -703,7 +705,7 @@ public class SingleTableModel implements DataModel
             }
             edgesUDTList.put(sourceID, in_edges);
 
-            database.getCollection("dianode").findOneAndUpdate(
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid",targetID),Filters.eq("_id.start",id.getString("start"))),
@@ -833,7 +835,7 @@ public class SingleTableModel implements DataModel
                         .append("color", colorTemp)
                         .append("incoming_edges",incoming)
                         .append("outgoing_edges",outgoing);
-                database.getCollection("dianode").insertOne(doc);
+                database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).insertOne(doc);
 
             }
         } catch (IOException ex)
