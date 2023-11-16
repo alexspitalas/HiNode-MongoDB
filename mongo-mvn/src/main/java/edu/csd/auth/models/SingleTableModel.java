@@ -601,8 +601,28 @@ public class SingleTableModel implements DataModel
         FindIterable<Document> t =  database.getCollection("dianode").find(Filters.eq("_id.vid",ver.getVid()));
         if (!t.cursor().hasNext())
         {
+            // Specify the query to find the document you want to update
+            Document query = new Document("_id.vid", ver.getVid());
+         // Iterate through each key in the map
+            for (String attr : ver.getAttributes().keySet()) {
+                ArrayList<Document> tempAttr = new ArrayList<>();
+    
+                // If you want to access the associated list of intervals
+                List<Interval> intervals = ver.getAttributes().get(key);
+                for (Interval interval : intervals) {
+                    tempAttr.add(interval.toDoc());
+                }
+                // Specify the update operation
+                Document update = new Document("$set", new Document(attr, tempAttr));
+    
+                // Perform the update
+                collection.updateOne(query, update);
+            }
+             
 
+            
 
+/*
             ArrayList<Document> name = new ArrayList<>();
             for (Interval interval : ver.getAttributes().get("name"))
             {
@@ -618,6 +638,7 @@ public class SingleTableModel implements DataModel
                     .append("end", ver.getEnd()))
                     .append("name", name )
                     .append("color", color);
+                    */
             database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).insertOne(doc);
             
         }
