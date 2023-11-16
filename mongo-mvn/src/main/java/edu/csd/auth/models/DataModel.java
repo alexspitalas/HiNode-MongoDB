@@ -25,8 +25,12 @@ public interface DataModel
     public void useKeyspace();
     public abstract void parseInput(String input);
 
-    public abstract void insertVertex(String vid, String name, String start, String end, String color);
-    public abstract void insertEdge(String sourceID, String targetID, String start, String end, String label, String weight);
+    public abstract void insertVertex(String vid, String startTime);
+    public abstract void deleteVertex(String vid, String endTime);
+    public abstract void insertAttribute(String vid,String attrName, String attrValue, String timestamp);
+    public abstract void deleteAttribute(String vid, String attrName, String attrValue, String timestamp);
+    public abstract void insertEdge(String sourceID, String targetID, String startTime, String label, String weight);
+    public abstract void deleteEdge(String sourceID, String targetID, String endTime, String label, String weight);
     public abstract void updateVertexAttribute(String vid, String attrName, String attrValue, String timestamp);
     
     public abstract DiaNode getVertexHistory(String vid, String first, String last);

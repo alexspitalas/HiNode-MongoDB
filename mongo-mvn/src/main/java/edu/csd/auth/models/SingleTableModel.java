@@ -625,7 +625,7 @@ public class SingleTableModel implements DataModel
     }
 
     @Override
-    public void insertEdge(String sourceID, String targetID, String start, String end, String label, String weight)
+    public void insertEdge(String sourceID, String targetID, String start, String label, String weight)
     {
         // First, insert the edge as an outgoing edge
         Document vertexRow = database.getCollection("dianode").find(Filters.eq("_id.vid",sourceID)).first();
@@ -716,17 +716,61 @@ public class SingleTableModel implements DataModel
     }
 
     @Override
-    public void insertVertex(String vid, String name, String start, String end, String color)
+    public void insertVertex(String vid, String start)
     {
         DiaNode ver = new DiaNode(vid, start, end);
+
+        FindIterable<Document> t =  database.getCollection("dianode").find(Filters.eq("_id.vid",ver.getVid()));
+        if (!t.cursor().hasNext()){
+
+            Document doc = new Document("_id", new Document().append("vid",ver.getVid())
+                    .append("start", ver.getStart())
+                    .append("end", ver.getEnd()));
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).insertOne(doc);
+            
+        }
+
+    }
+    
+    @Override
+    public void deleteVertex(String vid, String end)
+    {
+        //DiaNode ver = new DiaNode(vid, start, end);
+
+        insert(ver);
+    }
+
+    @Override
+    public void insertAttribute(String vid, String attrName, String attrValue, String timestamp)
+    {
+        //DiaNode ver = new DiaNode(vid, timestamp, end);
         List<Interval> namesList = new ArrayList<>();
-        namesList.add(new Interval(name,start,end));
+        namesList.add(new Interval(attrValue,timestamp,end));
+        
+        
+        // We only expect one row
+        Document row = database.getCollection("dianode").find(Filters.eq("_id.vid",vid)).first();
+        if (row == null)
+            return ;
+        
+        DiaNode dn = new DiaNode(row);   
+        dn.getAttributes().get(attrName).add(Interval(attrValue,timestamp,end));
+        
+        database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(doc);
+        
+        
 
-        List<Interval> colorsList = new ArrayList<>();
-        colorsList.add(new Interval(color,start,end));
+        insert(ver);
+    }
 
-        ver.insertAttribute("name", namesList);
-        ver.insertAttribute("color", colorsList);
+    @Override
+    public void deleteAttribute(String vid, String attrName, String attrValue, String timestamp)
+    {
+        DiaNode ver = new DiaNode(vid, start, timestamp);
+        List<Interval> namesList = new ArrayList<>();
+        namesList.add(new Interval(attrValue,start,timestamp));
+
+        ver.insertAttribute(attrName, namesList);
 
         insert(ver);
     }
