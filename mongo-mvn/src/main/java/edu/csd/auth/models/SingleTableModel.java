@@ -594,33 +594,31 @@ public class SingleTableModel implements DataModel
         
     }
 
-    public void insert(DiaNode ver)
+    public void updateVertex(DiaNode ver)
     {
-
-
         FindIterable<Document> t =  database.getCollection("dianode").find(Filters.eq("_id.vid",ver.getVid()));
         if (!t.cursor().hasNext())
         {
+            DiaNode current = new DiaNode(t.first());
+            
             // Specify the query to find the document you want to update
             Document query = new Document("_id.vid", ver.getVid());
-         // Iterate through each key in the map
+            // Iterate through each key in the map
+            
             for (String attr : ver.getAttributes().keySet()) {
-                ArrayList<Document> tempAttr = new ArrayList<>();
-    
+
+                List<Interval> tempAttr = current.getAttributes().get(attr);
+                
                 // If you want to access the associated list of intervals
-                List<Interval> intervals = ver.getAttributes().get(key);
+                List<Interval> intervals = ver.getAttributes().get(attr);
                 for (Interval interval : intervals) {
                     tempAttr.add(interval.toDoc());
                 }
                 // Specify the update operation
                 Document update = new Document("$set", new Document(attr, tempAttr));
-    
-                // Perform the update
-                collection.updateOne(query, update);
+                database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
             }
-             
-
-            
+        }
 
 /*
             ArrayList<Document> name = new ArrayList<>();
@@ -639,8 +637,63 @@ public class SingleTableModel implements DataModel
                     .append("name", name )
                     .append("color", color);
                     */
-            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).insertOne(doc);
             
+
+    }
+
+
+    public void updateVertexOneAttrStart(String id, String attribute, Interval interv) {
+        FindIterable<Document> t = database.getCollection("dianode").find(Filters.eq("_id.vid", id));
+        if (!t.cursor().hasNext()) {
+            Document current = t.first();
+
+            // Specify the query to find the document you want to update
+            Document query = new Document("_id.vid", id);
+            // Iterate through each key in the map
+
+            List<Document> tempAttr = current.getList(attribute, Document.class);
+            // List<Interval> tempAttr = current.getAttributes().get(attr);
+            
+            //if it adds new Interval we need to set the last one, if it is end
+            if(tempAttr.size()>0){
+                Document temp = tempAttr.get(tempAttr.size() - 1);
+                temp.put("end", interv.start);
+                tempAttr.remove(tempAttr.size() - 1);
+                tempAttr.add(temp);
+            }
+
+            tempAttr.add(interv.toDoc());
+            // Specify the update operation
+            Document update = new Document("$set", new Document(attribute, tempAttr));
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
+
+        }
+
+    }
+
+     public void updateVertexOneAttrEnd(String id, String attribute, String end) {
+        FindIterable<Document> t = database.getCollection("dianode").find(Filters.eq("_id.vid", id));
+        if (!t.cursor().hasNext()) {
+            Document current = t.first();
+
+            // Specify the query to find the document you want to update
+            Document query = new Document("_id.vid", id);
+            // Iterate through each key in the map
+
+            List<Document> tempAttr = current.getList(attribute, Document.class);
+            // List<Interval> tempAttr = current.getAttributes().get(attr);
+            
+            //if it adds new Interval we need to set the last one, if it is end
+            if(tempAttr.size()>0){
+                Document temp = tempAttr.get(tempAttr.size() - 1);
+                temp.put("end", end);
+                tempAttr.remove(tempAttr.size() - 1);
+                tempAttr.add(temp);
+            }
+            // Specify the update operation
+            Document update = new Document("$set", new Document(attribute, tempAttr));
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
+
         }
 
     }
@@ -781,7 +834,7 @@ public class SingleTableModel implements DataModel
         
         
 
-        insert(ver);
+        updateVertex(ver);
     }
 
     @Override
@@ -793,7 +846,7 @@ public class SingleTableModel implements DataModel
 
         ver.insertAttribute(attrName, namesList);
 
-        insert(ver);
+        updateVertex(ver);
     }
 
     private void parseFirstSnapshot(String input, int snap_count) // Used to bulk load data instead of using the typical methods
