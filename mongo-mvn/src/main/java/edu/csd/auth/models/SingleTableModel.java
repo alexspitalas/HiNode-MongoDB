@@ -722,17 +722,20 @@ public class SingleTableModel implements DataModel
         }
         else
         {
-            List<Edge> vertex_edges;
+            List<Edge> vertex_edges = new ArrayList<>();
+            
+            //if an edge already exist from source to target we might need to change its end depending on the semantics
             if (edges.get(targetID) != null)
             {
                 vertex_edges = edges.get(targetID);
-                Edge lastEdge = vertex_edges.get(vertex_edges.size()-1);
-                lastEdge.end = start;
-                out_edges.add(lastEdge.toDoc());
+                //Edge lastEdge = vertex_edges.get(vertex_edges.size()-1);
+                //lastEdge.end = start;
+                //out_edges.add(lastEdge.toDoc());
             }
-            else
-                out_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
-
+            for (Edge e: vertex_edges){
+                out_edges.add(e.toDoc());
+            }
+            out_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
             edgesUDTList.put(targetID, out_edges);
 
             database.getCollection("dianode").findOneAndUpdate(
@@ -765,18 +768,20 @@ public class SingleTableModel implements DataModel
         }
         else
         {
-            List<Edge> vertex_edges;
+            List<Edge> vertex_edges = new ArrayList<Edge>();
+            
             if (edges.get(sourceID) != null)
             {
                 vertex_edges = edges.get(sourceID);
-                Edge lastEdge = vertex_edges.get(vertex_edges.size() - 1);
-                lastEdge.end = start;
-                in_edges.add(lastEdge.toDoc());
+                //Edge lastEdge = vertex_edges.get(vertex_edges.size() - 1);
+                //lastEdge.end = start;
+                //in_edges.add(lastEdge.toDoc());
             }
-            else {
-                in_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
-
+            for (Edge e: vertex_edges){
+                in_edges.add(e.toDoc());
             }
+            in_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
+            
             edgesUDTList.put(sourceID, in_edges);
 
             database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
@@ -788,6 +793,108 @@ public class SingleTableModel implements DataModel
 
         }
     }
+
+
+    @Override
+    public void deleteEdge(String sourceID, String targetID, String start, String end, String label)
+    {
+        // First, insert the edge as an outgoing edge
+        Document vertexRow = database.getCollection("dianode").find(Filters.eq("_id.vid",sourceID)).first();
+        Document id = (Document) vertexRow.get("_id");
+        Document edgesUDTList =(Document) vertexRow.get("outgoing_edges");
+
+        Map<String, List<Edge>> edges = convertToEdgeList(edgesUDTList);
+        List<Document> out_edges = new ArrayList<>();
+
+        if (edges.isEmpty())
+        {
+            //out_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
+            /*database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
+                    Filters.and(
+                            Filters.and(
+                                    Filters.eq("_id.vid",sourceID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
+                    , Updates.set("outgoing_edges", new Document().append(targetID,out_edges)));
+*/
+        }
+        else
+        {
+            List<Edge> vertex_edges = new ArrayList<Edge>();
+            
+            if (edges.get(targetID) != null)
+            {
+                vertex_edges = edges.get(targetID);
+                for (Edge e: vertex_edges){
+                    if(e.label == label && e.start == start){
+                        e.end = end;
+                        break;
+                    }
+                    out_edges.add(e.toDoc());
+                }
+
+                //out_edges.add(lastEdge.toDoc());
+            }
+
+            
+            edgesUDTList.put(targetID, out_edges);
+
+            database.getCollection("dianode").findOneAndUpdate(
+                    Filters.and(
+                            Filters.and(
+                                    Filters.eq("_id.vid",sourceID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
+                    , Updates.set("outgoing_edges", edgesUDTList));
+        }
+
+        // Then, insert the edge as an incoming edge
+        vertexRow = database.getCollection("dianode").find(Filters.eq("_id.vid",targetID)).first();
+        if (vertexRow != null)
+            edgesUDTList = (Document)vertexRow.get("incoming_edges");
+        else
+            edgesUDTList = null;
+        edges = convertToEdgeList(edgesUDTList);
+
+        List<Document> in_edges = new ArrayList<>();
+
+        if (edges.isEmpty())
+        {
+            /*in_edges.add(new Edge(label, weight, targetID, start, end).toDoc());
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
+                    Filters.and(
+                            Filters.and(
+                                    Filters.eq("_id.vid",targetID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
+                    , Updates.set("incoming_edges", new Document().append(sourceID,in_edges)));
+        */
+        }
+        else
+        {
+            List<Edge> vertex_edges = new ArrayList<Edge>();
+            
+            if (edges.get(sourceID) != null)
+            {  
+                for (Edge e: vertex_edges){
+                    if(e.label == label && e.start == start){
+                        e.end = end;
+                        break;
+                    }
+                    in_edges.add(e.toDoc());
+                }
+            }
+            
+
+            edgesUDTList.put(sourceID, in_edges);
+
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
+                    Filters.and(
+                            Filters.and(
+                                    Filters.eq("_id.vid",targetID),Filters.eq("_id.start",id.getString("start"))),
+                            Filters.eq("_id.end",id.getString("end") ))
+                    , Updates.set("incoming_edges", edgesUDTList));
+
+        }
+    }
+
 
     @Override
     public void insertVertex(String vid, String start)
