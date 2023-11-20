@@ -2,6 +2,7 @@ package edu.csd.auth.models;
 
 //import com.datastax.driver.core.ConsistencyLevel;
 import edu.csd.auth.utils.DiaNode;
+import edu.csd.auth.utils.Interval;
 import edu.csd.auth.utils.SnapshotResult;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -27,8 +28,8 @@ public interface DataModel
 
     public abstract void insertVertex(String vid, String startTime);
     public abstract void deleteVertex(String vid, String endTime);
-    public abstract void insertAttribute(String vid,String attrName, String attrValue, String timestamp);
-    public abstract void deleteAttribute(String vid, String attrName, String attrValue, String timestamp);
+    public abstract void insertAttribute(String id, String attribute, Interval interv);
+    public abstract void deleteAttribute(String id, String attribute, String end);
     public abstract void insertEdge(String sourceID, String targetID, String startTime, String label, String weight);
     public abstract void deleteEdge(String sourceID, String targetID, String endTime, String label, String weight);
     public abstract void updateVertexAttribute(String vid, String attrName, String attrValue, String timestamp);
