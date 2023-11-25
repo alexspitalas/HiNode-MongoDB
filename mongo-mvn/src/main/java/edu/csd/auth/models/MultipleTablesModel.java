@@ -105,34 +105,20 @@ public class MultipleTablesModel implements DataModel
             database.getCollection("edge_outgoing").createIndex(index);
             index.put("_id.start", -1);
             database.getCollection("edge_outgoing").createIndex(index);
-
-            database.createCollection("edge_label_outgoing");
-
-            database.createCollection("edge_weight_outgoing");
-
-            database.createCollection("edge_incoming");
+            
             index.clear();
             index.put("_id.targetID", 1);
+            database.getCollection("edge_outgoing").createIndex(index);
+
             index.put("_id.start", -1);
-            database.getCollection("edge_incoming").createIndex(index);
-
-            database.createCollection("edge_label_incoming");
-
-            database.createCollection("edge_weight_incoming");
-            index.clear();
-            index.put("_id.targetID", 1);
-            index.put("_id.timestamp", -1);
-            database.getCollection("edge_label_outgoing").createIndex(index);
-            database.getCollection("edge_weight_outgoing").createIndex(index);
-            database.getCollection("edge_label_incoming").createIndex(index);
-            database.getCollection("edge_weight_incoming").createIndex(index);
-            index.clear();
+            database.getCollection("edge_outgoing").createIndex(index);
             index.put("_id.sourceID", 1);
-            index.put("_id.timestamp", -1);
-            database.getCollection("edge_label_outgoing").createIndex(index);
-            database.getCollection("edge_weight_outgoing").createIndex(index);
-            database.getCollection("edge_label_incoming").createIndex(index);
-            database.getCollection("edge_weight_incoming").createIndex(index);
+            database.getCollection("edge_outgoing").createIndex(index);
+            index.remove("_id.start");
+            index.put("_id.label", 1);
+            database.getCollection("edge_outgoing").createIndex(index);
+
+
         }
         catch (Exception ex)
         {
@@ -1239,81 +1225,95 @@ public class MultipleTablesModel implements DataModel
         }
     }
 
+    public void delete(String table, Document query, String end)
+    {
+        Document update = new Document("$set", new Document("end", end));
+        try
+        {
+            database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
+
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
     @Override
-    public void insertEdge(String sourceID, String targetID, String start, String end, String label, String weight)
+    public void insertEdge(String sourceID, String targetID, String start, String label, String weight)
     {
         Document values = new Document().append("_id", new Document()
                 .append("sourceID", sourceID)
                 .append("start", start)
-                .append("end", end)
-                .append("targetID", targetID));
+                .append("end", "now")
+                .append("targetID", targetID)
+                .append("label", label))
+                .append("weight", weight);
         insert("edge_outgoing", values);
-        values.clear();
-
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
-        values.put("label", label);
-        insert("edge_label_outgoing", values);
-        values.clear();
-
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
-        values.put("weight", weight);
-        insert("edge_weight_outgoing", values);
-        values.clear();
-
-        values = new Document().append("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("start", start)
-                .append("end", end)
-                .append("targetID", targetID));
-        insert("edge_incoming", values);
-        values.clear();
-
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
-        values.put("label", label);
-        insert("edge_label_incoming", values);
-        values.clear();
-
-        values.put("_id", new Document()
-                .append("sourceID", sourceID)
-                .append("timestamp", start)
-                .append("targetID", targetID));
-        values.put("weight", weight);
-        insert("edge_weight_incoming", values);
         values.clear();
     }
 
     @Override
-    public void insertVertex(String vid, String name, String start, String end, String color)
+    public void deleteEdge(String sourceID, String targetID, String endTime, String label, String weight){
+        Document query = new Document("_id.sourceID", sourceID)
+            .append("_id.targetID", targetID)
+            .append("label", label);
+
+        delete("edge_outgoing", query, endTime);
+
+    }
+
+    @Override
+    public void insertVertex(String vid, String start)
+    {
+        
+        Document values = new Document();
+        //search vertex with higher end time than start
+        FindIterable<Document> result = database.getCollection("vertex").find(Filters.and(
+                Filters.eq("_id.vid",vid), Filters.gte("_id.end",start ))).noCursorTimeout(true);
+        Document temp = result.first();
+        if(temp != null){
+            Document query = new Document("_id.vid", vid)
+            .append("_id.start", temp.getString("start"));
+            delete(vid, query, start);
+        }
+        
+        values.put("_id", new Document().append("vid", vid)
+                .append("start", start)
+                .append("end", "now"));
+        insert("vertex", values);
+        values.clear();
+        
+    }
+
+    @Override
+    public void deleteVertex(String vid, String endTime){
+        Document query = new Document("vid", vid);
+        delete("vertex", query,  endTime);
+    }
+
+    @Override
+    public void insertAttribute(String id, String attribute, Interval interv) 
     {
         Document values = new Document();
 
-        values.put("_id", new Document().append("vid", vid)
-                .append("start", start)
-                .append("end", end));
-        insert("vertex", values);
+        values.put("_id", new Document().append("vid", id)
+                .append("start", interv.start)
+                .append("end", "now")
+                .append("value", interv.value));
+
+        insert(attribute, values);
         values.clear();
 
-        values.put("_id", new Document().append("vid",vid)
-                .append("timestamp", start));
-        values.put("name", name);
-        insert("vertex_name", values);
-        values.clear();
-
-        values.put("_id", new Document().append("vid",vid)
-                .append("timestamp", start));
-        values.put("color", color);
-        insert("vertex_color", values);
-        values.clear();
     }
+
+    @Override
+    public void deleteAttribute(String id, String attribute, String end) 
+    {
+        Document query = new Document("_id.vid", id);
+        delete(attribute, query,  end);
+
+    }
+
 /*
     private void parseFirstSnapshot(String input, int snap_count) // Used to bulk load data instead of using the typical methods
     {
@@ -1463,80 +1463,115 @@ public class MultipleTablesModel implements DataModel
             int verKcounter = 0;
             int edgeKcounter = 0;
 
-            while ((line = file.readLine()) != null)
-            {
-                if (line.startsWith("mkdir") || line.startsWith("cd") || line.startsWith("time") || line.startsWith("string") || line.startsWith("double") || line.startsWith("shutdown"))
-                {
-                    continue;
-                }
-
-                if (line.startsWith("graph"))
-                {
-                    System.out.println(line);
+            while ((line = file.readLine()) != null) {
+                if (line.startsWith("vertex")) {
                     tokens = line.split(" ");
-                    if (tokens.length == 2) // "graph X" statement
+                    
+                    if (tokens.length != 4)
                     {
-                        curVersion = tokens[1];
-                    } else if (tokens.length == 3) // "graph X Y" statement
-                    {
-                        curVersion = tokens[1];
+                        System.out.println("Wrong number of attributes");
+                        break;
                     }
-                } else if (line.startsWith("vertex"))
-                {
-                    tokens = line.split(" ");
+                    
                     String verID = tokens[1];
-                    String name, color;
-                    if (tokens.length >= 3)
-                    {
-                        name = tokens[2].split("=")[1].replaceAll("\"", "");
-                    } else
-                    {
-                        name = getRandomString(4);
-                    }
-                    if (tokens.length == 4)
-                    {
-                        color = tokens[3].split("=")[1].replaceAll("\"", "");
-                    } else
-                    {
-                        color = getRandomString(4);
-                    }
-                    insertVertex(verID, name, DataModel.padWithZeros(curVersion), DataModel.padWithZeros("" + snap_count), color);
+                    String start;
+                    start = tokens[4];
+                    
+                    insertVertex(verID, start);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
-                    {
                         System.out.println("Vertices processed: " + verKcounter);
-                    }
-                } else if (line.startsWith("edge"))
-                {
+                }else if (line.startsWith("delete vertex")) {
                     tokens = line.split(" ");
+                    
+                    if (tokens.length != 5)
+                    {
+                        System.out.println("Wrong number of attributes");
+                        break;
+                    }
+                    String verID = tokens[2];
+                    String end;
+                    end = tokens[5];
+                    
+                    deleteVertex(verID, end);
+                    verKcounter++;
+                    if (verKcounter % 1000 == 0)
+                        System.out.println("Vertices processed: " + verKcounter);
+                } else if (line.startsWith("edge")) {
+                    tokens = line.split(" ");
+                    if (tokens.length != 5)
+                    {
+                        System.out.println("Wrong number of attributes");
+                        break;
+                    }
                     String sourceID = tokens[1];
                     String targetID = tokens[2];
-                    String weight;
-                    if (tokens.length == 4)
-                    {
-                        weight = tokens[3].split("=")[1];
-                    } else
-                    {
-                        weight = "" + Math.random();
-                    }
-                    insertEdge(sourceID, targetID, DataModel.padWithZeros(curVersion), DataModel.padWithZeros("" + snap_count), getRandomString(3), weight);
+                    String weight = "1";
+                    String label = "Person knows person";
+                    String start = tokens[4];
+                    
+                    insertEdge(sourceID, targetID, start, label, weight);
                     edgeKcounter++;
                     if (edgeKcounter % 1000 == 0)
-                    {
                         System.out.println("Edges processed: " + edgeKcounter);
-                    }
-                } else if (line.startsWith("update vertex"))
-                {
+                }else if (line.startsWith("delete edge")) {
                     tokens = line.split(" ");
+                    if (tokens.length != 5)
+                    {
+                        System.out.println("Wrong number of attributes");
+                        break;
+                    }
+                    String sourceID = tokens[2];
+                    String targetID = tokens[3];
+                    String label = "Person knows person";
+                    String end = tokens[4];
+                    
+                    deleteEdge(sourceID, targetID, targetID, end, label);
+                    edgeKcounter++;
+                    if (edgeKcounter % 1000 == 0)
+                        System.out.println("Edges processed: " + edgeKcounter);
+                } else if (line.startsWith("Add attribute")) {
+                    tokens = line.split(" ");
+                    
+                    if (tokens.length != 6)
+                    {
+                        System.out.println("Wrong number of attributes");
+                        break;
+                    }
+                    
                     String verID = tokens[2];
-                    String attrName = tokens[3].split("=")[0];
-                    String value = tokens[3].split("=")[1].replaceAll("\"", "");
-                    updateVertexAttribute(verID, attrName, value, curVersion);
+                    String label = tokens[3];
+                    String labelV = tokens[4];
+                    String start = tokens[5];
+                    
+                    Interval temp = new Interval(labelV, start, "now");
+                    insertAttribute(verID, label, temp);
+                    verKcounter++;
+                    if (verKcounter % 1000 == 0)
+                        System.out.println("Vertices processed: " + verKcounter);
+                }
+                else if (line.startsWith("Delete attribute")) {
+                    tokens = line.split(" ");
+                    
+                    if (tokens.length != 6)
+                    {
+                        System.out.println("Wrong number of attributes");
+                        break;
+                    }
+                    
+                    String verID = tokens[2];
+                    String label = tokens[3];
+                    String end = tokens[4];
+
+                    deleteAttribute(verID, label, end);
+                    verKcounter++;
+                    if (verKcounter % 1000 == 0)
+                        System.out.println("Vertices processed: " + verKcounter);
                 }
             }
-        } catch (IOException ex)
-        {
-            Logger.getLogger(MultipleTablesModel.class.getName()).log(Level.SEVERE, null, ex);
+            file.close();
+        } catch (IOException ex) {
+            Logger.getLogger(SingleTableModel.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 /*
