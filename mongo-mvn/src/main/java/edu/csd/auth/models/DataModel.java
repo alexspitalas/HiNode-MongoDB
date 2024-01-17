@@ -31,7 +31,7 @@ public interface DataModel
     public abstract void insertAttribute(String id, String attribute, Interval interv);
     public abstract void deleteAttribute(String id, String attribute, String end);
     public abstract void insertEdge(String sourceID, String targetID, String startTime, String label, String weight);
-    public abstract void deleteEdge(String sourceID, String targetID, String endTime, String label, String weight);
+    public abstract void deleteEdge(String sourceID, String targetID, String endTime, String label);
     public abstract void updateVertexAttribute(String vid, String attrName, String attrValue, String timestamp);
     
     public abstract DiaNode getVertexHistory(String vid, String first, String last);
@@ -59,11 +59,11 @@ public interface DataModel
             file.close();
         } catch (FileNotFoundException ex) 
         {
-            Logger.getLogger(BaselineModel.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(SingleTableModel.class.getName()).log(Level.SEVERE, null, ex);
         } 
         catch (IOException ex) 
         {
-            Logger.getLogger(BaselineModel.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(SingleTableModel.class.getName()).log(Level.SEVERE, null, ex);
         }
         return count;
     }

@@ -25,6 +25,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +45,8 @@ import java.util.logging.Logger;
 
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+
 import org.bson.Document;
 
 public class MultipleTablesModel implements DataModel
@@ -89,15 +92,15 @@ public class MultipleTablesModel implements DataModel
 
             database.createCollection("vertex");
 
-            database.createCollection("vertex_name");
-
-            database.createCollection("vertex_color");
 
             index.put("_id.vid", 1);
             database.getCollection("vertex").createIndex(index);
-            index.put("_id.timestamp", -1);
-            database.getCollection("vertex_color").createIndex(index);
-            database.getCollection("vertex_name").createIndex(index);
+            
+            index.put("_id.end", 1);
+            database.getCollection("vertex").createIndex(index);
+            index.remove("_id.vid");
+            index.put("_id.start", 1);
+            database.getCollection("vertex").createIndex(index);
 
             database.createCollection("edge_outgoing");
             index.clear();
@@ -118,6 +121,10 @@ public class MultipleTablesModel implements DataModel
             index.put("_id.label", 1);
             database.getCollection("edge_outgoing").createIndex(index);
 
+            index.clear();
+            index.put("_id.start", -1);
+            index.put("_id.end", -1);
+            database.getCollection("edge_outgoing").createIndex(index);
 
         }
         catch (Exception ex)
@@ -144,8 +151,8 @@ public class MultipleTablesModel implements DataModel
         for (Document row : cursor)
         {
             Document id = (Document) row.get("_id");
-            int rowstart = Integer.parseInt(id.getString("start"));
-            int rowend = Integer.parseInt(id.getString("end"));
+            int rowstart = Integer.parseInt(id.getString("start").substring(0,4));
+            int rowend = Integer.parseInt(id.getString("end").substring(0,4));
 
             if (rowend < Integer.parseInt(first) || Integer.parseInt(last) < rowstart) // Assumes correct intervals as input
             {
@@ -894,13 +901,13 @@ public class MultipleTablesModel implements DataModel
 
             for (Document row : cursor) {
                 Document id = (Document) row.get("_id");
-                String rowend = id.getString("end");
+                String rowend = id.getString("end").substring(0,4);
                 if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
                 {
                     continue;
                 }
 
-                String rowstart = id.getString("start");
+                String rowstart = id.getString("start").substring(0,4);
                 String vid = id.getString("sourceID");
 
                 int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
@@ -951,20 +958,20 @@ public class MultipleTablesModel implements DataModel
         long tStart, tEnd, tDelta;
 
         HashMap<String, HashMap<String, Double>> vertexDegreeInAllInstances = new HashMap<>(); // Holds for each vertex a map containing (Instance,Vertex_count) pairs
-
-        ConcurrentLinkedQueue<Document> rows = getAllEdgesAndFilterAlive(first, last);
-
+        FindIterable<Document> rows  = database.getCollection("edge_outgoing").
+                find(Filters.or(Filters.gte("_id.end",first) , Filters.lte("_id.start",last )))
+                .noCursorTimeout(true);
         tStart = System.nanoTime();
         for (Document row : rows)
         {
             Document id = (Document) row.get("_id");
-            String rowend = id.getString("end");
+            String rowend = id.getString("end").substring(0,4);
             if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
             {
                 continue;
             }
 
-            String rowstart = id.getString("start");
+            String rowstart = id.getString("start").substring(0,4);
             String vid = id.getString("sourceID");
 
             int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
@@ -1000,13 +1007,13 @@ public class MultipleTablesModel implements DataModel
                 }
                 Integer count = degreeDistr.get(degree.toString());
                 degreeDistr.put(degree.toString(), (count == null) ? 1 : count + 1);
-                results.put(instance.toString(),degreeDistr);
+                results.put(instance,degreeDistr);
             }
         }
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
         double elapsedSeconds = tDelta / 1000000000.0;
-        System.out.println("Time required for processing and evaluating the DegDistr query: " + elapsedSeconds + " seconds.");
+        System.out.println("Time required for processing and evaluating the DegDistrall query: " + elapsedSeconds + " seconds.");
         return results;
     }
 
@@ -1075,7 +1082,7 @@ public class MultipleTablesModel implements DataModel
 
         tStart = System.nanoTime();
         FindIterable<Document> result = database.getCollection("edge_outgoing").find(Filters.and(
-                Filters.eq("id_sourceID",vid), Filters.lte("_id.start",last )))
+                Filters.eq("_id.sourceID",vid), Filters.lte("_id.start",last )))
                 .projection(Projections.include("_id.end", "_id.targetID")).noCursorTimeout(true);
 
         tEnd = System.nanoTime();
@@ -1087,7 +1094,7 @@ public class MultipleTablesModel implements DataModel
         for (Document row : result)
         {
             Document id = (Document) row.get("_id");
-            String end = id.getString("end");
+            String end = id.getString("end").substring(0,4);
             if (Integer.parseInt(first) > Integer.parseInt(end))
             {
                 continue;
@@ -1216,11 +1223,22 @@ public class MultipleTablesModel implements DataModel
     {
         try
         {
+            // Check if the collection exists
+            if (!database.listCollectionNames().into(new ArrayList<>()).contains(table)) {
+                //System.out.println("Collection does not exist.");
+                database.createCollection(table);
+
+                BasicDBObject index = new BasicDBObject();
+                index.put("_id.vid", 1);
+                database.getCollection(table).createIndex(index);
+            }
 
             database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).insertOne(values);
 
         } catch (Exception e)
         {
+
+            
             e.printStackTrace();
         }
     }
@@ -1244,7 +1262,7 @@ public class MultipleTablesModel implements DataModel
         Document values = new Document().append("_id", new Document()
                 .append("sourceID", sourceID)
                 .append("start", start)
-                .append("end", "now")
+                .append("end", "2099")
                 .append("targetID", targetID)
                 .append("label", label))
                 .append("weight", weight);
@@ -1253,7 +1271,7 @@ public class MultipleTablesModel implements DataModel
     }
 
     @Override
-    public void deleteEdge(String sourceID, String targetID, String endTime, String label, String weight){
+    public void deleteEdge(String sourceID, String targetID, String endTime, String label){
         Document query = new Document("_id.sourceID", sourceID)
             .append("_id.targetID", targetID)
             .append("label", label);
@@ -1267,6 +1285,7 @@ public class MultipleTablesModel implements DataModel
     {
         
         Document values = new Document();
+        /* Commented for test reasons
         //search vertex with higher end time than start
         FindIterable<Document> result = database.getCollection("vertex").find(Filters.and(
                 Filters.eq("_id.vid",vid), Filters.gte("_id.end",start ))).noCursorTimeout(true);
@@ -1275,11 +1294,11 @@ public class MultipleTablesModel implements DataModel
             Document query = new Document("_id.vid", vid)
             .append("_id.start", temp.getString("start"));
             delete(vid, query, start);
-        }
+        }*/
         
         values.put("_id", new Document().append("vid", vid)
                 .append("start", start)
-                .append("end", "now"));
+                .append("end", "2099"));
         insert("vertex", values);
         values.clear();
         
@@ -1298,7 +1317,7 @@ public class MultipleTablesModel implements DataModel
 
         values.put("_id", new Document().append("vid", id)
                 .append("start", interv.start)
-                .append("end", "now")
+                .append("end", "2099")
                 .append("value", interv.value));
 
         insert(attribute, values);
@@ -1314,151 +1333,13 @@ public class MultipleTablesModel implements DataModel
 
     }
 
-/*
-    private void parseFirstSnapshot(String input, int snap_count) // Used to bulk load data instead of using the typical methods
-    {
-        try
-        {
+
+   public void parseInput(String input) {
+        try {
+            //int snap_count = DataModel.getCountOfSnapshotsInInput(input);
+
             BufferedReader file = new BufferedReader(new FileReader(input));
             String line;
-            String tokens[];
-
-            TreeMap<String, Vertex> vertices = new TreeMap<String, Vertex>();
-
-            while ((line = file.readLine()) != null)
-            {
-                if (line.startsWith("mkdir") || line.startsWith("cd") || line.startsWith("time") || line.startsWith("string") || line.startsWith("double") || line.startsWith("shutdown"))
-                {
-                    continue;
-                }
-
-                if (line.equals("graph 1 0") || line.equals("graph 1")) // As soon as we've reached the second snapshot, stop
-                {
-                    break;
-                }
-
-                if (line.equals("use " + keyspace + ""))
-                {
-                    session.execute("USE " + keyspace + ";");
-                } else if (line.startsWith("vertex"))
-                {
-                    tokens = line.split(" ");
-                    String verID = tokens[1];
-                    String name, color;
-                    if (tokens.length >= 3)
-                    {
-                        name = tokens[2].split("=")[1].replaceAll("\"", "");
-                    } else
-                    {
-                        name = getRandomString(4);
-                    }
-                    if (tokens.length == 4)
-                    {
-                        color = tokens[3].split("=")[1].replaceAll("\"", "");
-                    } else
-                    {
-                        color = getRandomString(4);
-                    }
-                    Vertex ver = new Vertex();
-                    ver.setVid(verID);
-                    ver.setTimestamp("00000000");
-                    HashMap<String, String> attributes = new HashMap<String, String>();
-                    attributes.put("name", name);
-                    attributes.put("color", color);
-                    ver.setAttributes(attributes);
-                    vertices.put(verID, ver);
-                } else if (line.startsWith("edge"))
-                {
-                    tokens = line.split(" ");
-                    String sourceID = tokens[1];
-                    String targetID = tokens[2];
-                    String weight;
-                    if (tokens.length == 4)
-                    {
-                        weight = tokens[3].split("=")[1];
-                    } else
-                    {
-                        weight = "" + Math.random();
-                    }
-
-                    Vertex sVer = vertices.get(sourceID);
-                    sVer.addOutgoingEdge(targetID, new Edge("testlabel", weight, targetID, "00000000", DataModel.padWithZeros("" + snap_count)));
-                    Vertex tVer = vertices.get(targetID);
-                    tVer.addIncomingEdge(sourceID, new Edge("testlabel", weight, sourceID, "00000000", DataModel.padWithZeros("" + snap_count)));
-                    vertices.put(sourceID, sVer);
-                    vertices.put(targetID, tVer);
-                }
-            }
-            file.close();
-
-            for (String vid : vertices.keySet())
-            {
-                session.executeAsync("INSERT INTO " + keyspace + ".vertex");
-            }
-
-            for (String vid : vertices.keySet())
-            {
-                Vertex ver = vertices.get(vid);
-                HashMap<String, String> attrs = ver.getAttributes();
-
-                String start = ver.getTimestamp();
-                String end = DataModel.padWithZeros("" + snap_count);
-                String name = attrs.get("name");
-                String color = attrs.get("color");
-
-                HashMap<String, Edge> allIncEdges = ver.getIncoming_edges();
-                HashMap<String, Edge> allOutEdges = ver.getOutgoing_edges();
-
-                String allIncEdgesstr = "";
-                for (String source : allIncEdges.keySet())
-                {
-                    Edge edge = allIncEdges.get(source);
-                    allIncEdgesstr = allIncEdgesstr.concat("'" + edge.otherEnd + "': [");
-                    allIncEdgesstr = allIncEdgesstr.concat(edge.toString()).concat("], ");
-                }
-                if (!allIncEdgesstr.equals(""))
-                {
-                    allIncEdgesstr = allIncEdgesstr.substring(0, allIncEdgesstr.length() - 2);
-                }
-
-                String allOutEdgesstr = "";
-                for (String target : allOutEdges.keySet())
-                {
-                    Edge edge = allOutEdges.get(target);
-                    allOutEdgesstr = allOutEdgesstr.concat("'" + edge.otherEnd + "': [");
-                    allOutEdgesstr = allOutEdgesstr.concat(edge.toString()).concat("], ");
-                }
-                if (!allOutEdgesstr.equals(""))
-                {
-                    allOutEdgesstr = allOutEdgesstr.substring(0, allOutEdgesstr.length() - 2);
-                }
-
-                session.execute("INSERT INTO " + keyspace + ".dianode (vid, start, end, name, color, incoming_edges, outgoing_edges)" //Assume only one edge per vertex pair in graph 0
-                        + "VALUES ('" + ver.getVid() + "', '" + start + "', '" + end + "', "
-                        + "[{value: '" + name + "', start: '00000000', end: '" + DataModel.padWithZeros("" + snap_count) + "'}], "
-                        + "[{value: '" + color + "', start: '00000000', end: '" + DataModel.padWithZeros("" + snap_count) + "'}], "
-                        + "{" + allIncEdgesstr + "}, "
-                        + "{" + allOutEdgesstr + "}"
-                        + ");");
-            }
-        } catch (FileNotFoundException ex)
-        {
-            Logger.getLogger(SingleTableModel.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex)
-        {
-            Logger.getLogger(SingleTableModel.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-*/
-    @Override
-    public void parseInput(String input)
-    {
-        try
-        {
-            int snap_count = DataModel.getCountOfSnapshotsInInput(input);
-
-            BufferedReader file = new BufferedReader(new FileReader(input));
-            String line, curVersion = "0";
             String[] tokens;
             int verKcounter = 0;
             int edgeKcounter = 0;
@@ -1469,13 +1350,14 @@ public class MultipleTablesModel implements DataModel
                     
                     if (tokens.length != 4)
                     {
-                        System.out.println("Wrong number of attributes");
+                        System.out.println("Wrong number of attributes (insert vertex)");
+                        System.out.println(line);
                         break;
                     }
                     
                     String verID = tokens[1];
                     String start;
-                    start = tokens[4];
+                    start = tokens[3];
                     
                     insertVertex(verID, start);
                     verKcounter++;
@@ -1484,14 +1366,15 @@ public class MultipleTablesModel implements DataModel
                 }else if (line.startsWith("delete vertex")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 5)
+                    if (tokens.length != 4)
                     {
-                        System.out.println("Wrong number of attributes");
+                        System.out.println("Wrong number of attributes (delete vertex)");
+                        System.out.println(line);
                         break;
                     }
                     String verID = tokens[2];
                     String end;
-                    end = tokens[5];
+                    end = tokens[3];
                     
                     deleteVertex(verID, end);
                     verKcounter++;
@@ -1501,7 +1384,8 @@ public class MultipleTablesModel implements DataModel
                     tokens = line.split(" ");
                     if (tokens.length != 5)
                     {
-                        System.out.println("Wrong number of attributes");
+                        System.out.println("Wrong number of attributes (insert edge)");
+                        System.out.println(line);
                         break;
                     }
                     String sourceID = tokens[1];
@@ -1518,7 +1402,8 @@ public class MultipleTablesModel implements DataModel
                     tokens = line.split(" ");
                     if (tokens.length != 5)
                     {
-                        System.out.println("Wrong number of attributes");
+                        System.out.println("Wrong number of attributes (delete edge)");
+                        System.out.println(line);
                         break;
                     }
                     String sourceID = tokens[2];
@@ -1526,25 +1411,26 @@ public class MultipleTablesModel implements DataModel
                     String label = "Person knows person";
                     String end = tokens[4];
                     
-                    deleteEdge(sourceID, targetID, targetID, end, label);
+                    deleteEdge(sourceID, targetID, end, label);
                     edgeKcounter++;
                     if (edgeKcounter % 1000 == 0)
                         System.out.println("Edges processed: " + edgeKcounter);
                 } else if (line.startsWith("Add attribute")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 6)
+                    if (tokens.length < 6)
                     {
-                        System.out.println("Wrong number of attributes");
+                        System.out.println("Wrong number of attributes (add attribute)");
+                        System.out.println(line);
                         break;
                     }
                     
                     String verID = tokens[2];
                     String label = tokens[3];
-                    String labelV = tokens[4];
-                    String start = tokens[5];
+                    String labelV = String.join(",", Arrays.copyOfRange(tokens, 4, tokens.length - 1));
+                    String start = tokens[tokens.length -1];
                     
-                    Interval temp = new Interval(labelV, start, "now");
+                    Interval temp = new Interval(labelV, start, "2099");
                     insertAttribute(verID, label, temp);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
@@ -1555,7 +1441,8 @@ public class MultipleTablesModel implements DataModel
                     
                     if (tokens.length != 6)
                     {
-                        System.out.println("Wrong number of attributes");
+                        System.out.println("Wrong number of attributes (delete attribute)");
+                        System.out.println(line);
                         break;
                     }
                     

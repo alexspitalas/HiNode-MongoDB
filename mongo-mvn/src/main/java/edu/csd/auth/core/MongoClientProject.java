@@ -7,7 +7,6 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.connection.ServerDescription;
-import edu.csd.auth.models.BaselineModel;
 import edu.csd.auth.models.DataModel;
 import edu.csd.auth.models.MultipleTablesModel;
 import edu.csd.auth.models.SingleTableModel;
@@ -61,7 +60,7 @@ public class MongoClientProject
                 model = new SingleTableModel(mongoClient, keyspace);
                 break;
             case "base":
-                model = new BaselineModel(mongoClient, keyspace);
+                //model = new BaselineModel(mongoClient, keyspace);
                 break;
             default:
                 System.out.println("Please specify a valid model (single/multiple/base). Exiting...");
@@ -82,6 +81,16 @@ public class MongoClientProject
             model.useKeyspace();
         }
 
+        if (!input.equals("none"))
+        {
+            long tStart = System.nanoTime();
+            model.parseInput(input);
+            long tEnd = System.nanoTime();
+            long tDelta = tEnd - tStart;
+            double elapsedSeconds = tDelta / 1000000000.0;
+            System.out.println("Time required to input all data for file \"" + input + "\": " + (elapsedSeconds / 60.0) + " minutes.");
+        }
+
         if (!specialOp.equals("none"))
         {
             long tStart, tEnd, tDelta;
@@ -99,16 +108,6 @@ public class MongoClientProject
             }
             double elapsedSeconds = (tDelta / (iterations-1)) / 1000000000.0;
             System.out.println("Average time required for performing the '" + specialOp + "' special operation in the '" + flag + "' model (over " + (iterations-1) + " iterations): " + elapsedSeconds);
-        }
-
-        if (!input.equals("none"))
-        {
-            long tStart = System.nanoTime();
-            model.parseInput(input);
-            long tEnd = System.nanoTime();
-            long tDelta = tEnd - tStart;
-            double elapsedSeconds = tDelta / 1000000000.0;
-            System.out.println("Time required to input all data for file \"" + input + "\": " + (elapsedSeconds / 60.0) + " minutes.");
         }
 
         mongoClient.close();
@@ -158,7 +157,7 @@ public class MongoClientProject
             cluster.getConfiguration().getSocketOptions().setReadTimeoutMillis(10 * 60 * 1000);
             */
             //mongoClient = MongoClients.create("mongodb://localhost:27017");
-            List hosts = new ArrayList();
+            ArrayList<ServerAddress> hosts = new ArrayList();
             for (String address : host.split(",")){
                 hosts.add(new ServerAddress(address, port));
             }

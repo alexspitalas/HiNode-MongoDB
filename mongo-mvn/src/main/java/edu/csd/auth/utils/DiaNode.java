@@ -192,8 +192,8 @@ public class DiaNode
 
     public void keepValuesInInterval(String first, String last)
     {
-        start = (Integer.parseInt(start) < Integer.parseInt(first) ? first : start);
-        end = (Integer.parseInt(end) > Integer.parseInt(last) ? last : end);
+        start = (Integer.parseInt(start.substring(0,4)) < Integer.parseInt(first.substring(0,4)) ? first : start);
+        end = (Integer.parseInt(end.substring(0,4)) > Integer.parseInt(last.substring(0,4)) ? last : end);
         for (String attrName : attributes.keySet())
         {
             List<Interval> allValues = attributes.get(attrName);
@@ -201,13 +201,13 @@ public class DiaNode
             while (it.hasNext())
             {
                 Interval ival = it.next();
-                if (!(ival.stab(first) || ival.stab(last)))
+                if (!(ival.stab(first.substring(0,4)) || ival.stab(last.substring(0,4))))
                 {
                     it.remove();
                     continue;
                 }
-                ival.start = (Integer.parseInt(ival.start) < Integer.parseInt(first) ? first : ival.start);
-                ival.end = (Integer.parseInt(ival.end) > Integer.parseInt(last) ? last : ival.end);
+                ival.start = (Integer.parseInt(ival.start.substring(0,4)) < Integer.parseInt(first.substring(0,4)) ? first.substring(0,4) : ival.start.substring(0,4));
+                ival.end = (Integer.parseInt(ival.end.substring(0,4)) > Integer.parseInt(last.substring(0,4)) ? last.substring(0,4) : ival.end.substring(0,4));
             }
             attributes.put(attrName, allValues);
         }
@@ -219,13 +219,13 @@ public class DiaNode
             while (edgeIt.hasNext())
             {
                 Edge edge = edgeIt.next();
-                if (Integer.parseInt(edge.end) < Integer.parseInt(first) || Integer.parseInt(last) < Integer.parseInt(edge.start))
+                if (Integer.parseInt(edge.end.substring(0,4)) < Integer.parseInt(first.substring(0,4)) || Integer.parseInt(last.substring(0,4)) < Integer.parseInt(edge.start.substring(0,4)))
                 {
                     edgeIt.remove();
                     continue;
                 }
-                int lowerBound = (Integer.parseInt(edge.start) < Integer.parseInt(first) ? Integer.parseInt(first) : Integer.parseInt(edge.start));
-                int upperBound = (Integer.parseInt(last) < Integer.parseInt(edge.end) ? Integer.parseInt(last) : Integer.parseInt(edge.end));
+                int lowerBound = (Integer.parseInt(edge.start.substring(0,4)) < Integer.parseInt(first.substring(0,4)) ? Integer.parseInt(first.substring(0,4)) : Integer.parseInt(edge.start.substring(0,4)));
+                int upperBound = (Integer.parseInt(last.substring(0,4)) < Integer.parseInt(edge.end.substring(0,4)) ? Integer.parseInt(last.substring(0,4)) : Integer.parseInt(edge.end.substring(0,4)));
                 edge.start = Integer.toString(lowerBound);
                 edge.end = Integer.toString(upperBound);
             }
