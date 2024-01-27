@@ -92,24 +92,26 @@ public class MultipleTablesModel implements DataModel
 
             database.createCollection("vertex");
 
-
+            index.put("_id.label", 1);
             index.put("_id.vid", 1);
             database.getCollection("vertex").createIndex(index);
             
             index.put("_id.end", 1);
             database.getCollection("vertex").createIndex(index);
-            index.remove("_id.vid");
-            index.put("_id.start", 1);
-            database.getCollection("vertex").createIndex(index);
+            //index.remove("_id.vid");
+            //index.put("_id.start", 1);
+            //database.getCollection("vertex").createIndex(index);
 
             database.createCollection("edge_outgoing");
             index.clear();
+            //index.put("_id.label", 1);
             index.put("_id.sourceID", 1);
-            database.getCollection("edge_outgoing").createIndex(index);
+            //database.getCollection("edge_outgoing").createIndex(index);
             index.put("_id.start", -1);
             database.getCollection("edge_outgoing").createIndex(index);
-            
+            /* 
             index.clear();
+            index.put("_id.label", 1);
             index.put("_id.targetID", 1);
             database.getCollection("edge_outgoing").createIndex(index);
 
@@ -120,10 +122,12 @@ public class MultipleTablesModel implements DataModel
             index.remove("_id.start");
             index.put("_id.label", 1);
             database.getCollection("edge_outgoing").createIndex(index);
-
+*/
             index.clear();
             index.put("_id.start", -1);
             index.put("_id.end", -1);
+            database.getCollection("edge_outgoing").createIndex(index);
+            index.put("_id.label", 1);
             database.getCollection("edge_outgoing").createIndex(index);
 
         }
@@ -966,10 +970,12 @@ public class MultipleTablesModel implements DataModel
         {
             Document id = (Document) row.get("_id");
             String rowend = id.getString("end").substring(0,4);
+            /* 
             if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
             {
                 continue;
             }
+            */
 
             String rowstart = id.getString("start").substring(0,4);
             String vid = id.getString("sourceID");
@@ -1230,10 +1236,11 @@ public class MultipleTablesModel implements DataModel
 
                 BasicDBObject index = new BasicDBObject();
                 index.put("_id.vid", 1);
+                index.put("_id.label", 1);
                 database.getCollection(table).createIndex(index);
             }
 
-            database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).insertOne(values);
+            database.getCollection(table).insertOne(values);
 
         } catch (Exception e)
         {
@@ -1248,7 +1255,7 @@ public class MultipleTablesModel implements DataModel
         Document update = new Document("$set", new Document("end", end));
         try
         {
-            database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
+            database.getCollection(table).updateOne(query, update);
 
         } catch (Exception e)
         {
@@ -1267,21 +1274,21 @@ public class MultipleTablesModel implements DataModel
                 .append("label", label))
                 .append("weight", weight);
         insert("edge_outgoing", values);
-        values.clear();
+        values.clear(); 
     }
 
     @Override
     public void deleteEdge(String sourceID, String targetID, String endTime, String label){
         Document query = new Document("_id.sourceID", sourceID)
             .append("_id.targetID", targetID)
-            .append("label", label);
+            .append("_id.label", label);
 
         delete("edge_outgoing", query, endTime);
 
     }
 
     @Override
-    public void insertVertex(String vid, String start)
+    public void insertVertex(String vid, String start, String label)
     {
         
         Document values = new Document();
@@ -1297,6 +1304,7 @@ public class MultipleTablesModel implements DataModel
         }*/
         
         values.put("_id", new Document().append("vid", vid)
+                .append("label", label)
                 .append("start", start)
                 .append("end", "2099"));
         insert("vertex", values);
@@ -1305,20 +1313,21 @@ public class MultipleTablesModel implements DataModel
     }
 
     @Override
-    public void deleteVertex(String vid, String endTime){
-        Document query = new Document("vid", vid);
+    public void deleteVertex(String vid, String endTime, String label){
+        Document query = new Document("_id.vid", vid).append( "_id.label", label);
         delete("vertex", query,  endTime);
     }
 
     @Override
-    public void insertAttribute(String id, String attribute, Interval interv) 
+    public void insertAttribute(String id, String attribute, Interval interv, String label) 
     {
         Document values = new Document();
 
         values.put("_id", new Document().append("vid", id)
+                .append("label", label)
                 .append("start", interv.start)
-                .append("end", "2099")
-                .append("value", interv.value));
+                .append("end", "2099"));
+        values.put("value", interv.value);
 
         insert(attribute, values);
         values.clear();
@@ -1326,15 +1335,14 @@ public class MultipleTablesModel implements DataModel
     }
 
     @Override
-    public void deleteAttribute(String id, String attribute, String end) 
+    public void deleteAttribute(String id, String attribute, String end, String label) 
     {
-        Document query = new Document("_id.vid", id);
+        Document query = new Document("_id.vid", id).append("_id.label", label);
         delete(attribute, query,  end);
 
     }
 
-
-   public void parseInput(String input) {
+    public void parseInput(String input) {
         try {
             //int snap_count = DataModel.getCountOfSnapshotsInInput(input);
 
@@ -1348,7 +1356,7 @@ public class MultipleTablesModel implements DataModel
                 if (line.startsWith("vertex")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 4)
+                    if (tokens.length != 5)
                     {
                         System.out.println("Wrong number of attributes (insert vertex)");
                         System.out.println(line);
@@ -1356,43 +1364,43 @@ public class MultipleTablesModel implements DataModel
                     }
                     
                     String verID = tokens[1];
-                    String start;
-                    start = tokens[3];
-                    
-                    insertVertex(verID, start);
+                    String label = tokens[2];
+                    String start = tokens[4];
+
+                    insertVertex(verID, start, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);
                 }else if (line.startsWith("delete vertex")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 4)
+                    if (tokens.length != 5)
                     {
                         System.out.println("Wrong number of attributes (delete vertex)");
                         System.out.println(line);
                         break;
                     }
                     String verID = tokens[2];
-                    String end;
-                    end = tokens[3];
+                    String label = tokens[3];
+                    String end = tokens[4];
                     
-                    deleteVertex(verID, end);
+                    deleteVertex(verID, end, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);
                 } else if (line.startsWith("edge")) {
                     tokens = line.split(" ");
-                    if (tokens.length != 5)
+                    if (tokens.length != 6)
                     {
                         System.out.println("Wrong number of attributes (insert edge)");
                         System.out.println(line);
                         break;
                     }
-                    String sourceID = tokens[1];
-                    String targetID = tokens[2];
+                    String label = tokens[1];
+                    String sourceID = tokens[2];
+                    String targetID = tokens[3];
                     String weight = "1";
-                    String label = "Person knows person";
-                    String start = tokens[4];
+                    String start = tokens[5];
                     
                     insertEdge(sourceID, targetID, start, label, weight);
                     edgeKcounter++;
@@ -1400,16 +1408,16 @@ public class MultipleTablesModel implements DataModel
                         System.out.println("Edges processed: " + edgeKcounter);
                 }else if (line.startsWith("delete edge")) {
                     tokens = line.split(" ");
-                    if (tokens.length != 5)
+                    if (tokens.length != 6)
                     {
                         System.out.println("Wrong number of attributes (delete edge)");
                         System.out.println(line);
                         break;
                     }
-                    String sourceID = tokens[2];
-                    String targetID = tokens[3];
-                    String label = "Person knows person";
-                    String end = tokens[4];
+                    String label = tokens[2];
+                    String sourceID = tokens[3];
+                    String targetID = tokens[4];
+                    String end = tokens[5];
                     
                     deleteEdge(sourceID, targetID, end, label);
                     edgeKcounter++;
@@ -1418,7 +1426,7 @@ public class MultipleTablesModel implements DataModel
                 } else if (line.startsWith("Add attribute")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length < 6)
+                    if (tokens.length < 7)
                     {
                         System.out.println("Wrong number of attributes (add attribute)");
                         System.out.println(line);
@@ -1427,11 +1435,12 @@ public class MultipleTablesModel implements DataModel
                     
                     String verID = tokens[2];
                     String label = tokens[3];
-                    String labelV = String.join(",", Arrays.copyOfRange(tokens, 4, tokens.length - 1));
+                    String attr = tokens[4];
+                    String attrV = String.join(",", Arrays.copyOfRange(tokens, 5, tokens.length - 1));
                     String start = tokens[tokens.length -1];
                     
-                    Interval temp = new Interval(labelV, start, "2099");
-                    insertAttribute(verID, label, temp);
+                    Interval temp = new Interval(attrV, start, "2099");
+                    insertAttribute(verID, attr, temp, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);
@@ -1439,7 +1448,7 @@ public class MultipleTablesModel implements DataModel
                 else if (line.startsWith("Delete attribute")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 6)
+                    if (tokens.length != 7)
                     {
                         System.out.println("Wrong number of attributes (delete attribute)");
                         System.out.println(line);
@@ -1448,9 +1457,10 @@ public class MultipleTablesModel implements DataModel
                     
                     String verID = tokens[2];
                     String label = tokens[3];
-                    String end = tokens[4];
+                    String attr = tokens[4];
+                    String end = tokens[5];
 
-                    deleteAttribute(verID, label, end);
+                    deleteAttribute(verID, attr, end, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);
