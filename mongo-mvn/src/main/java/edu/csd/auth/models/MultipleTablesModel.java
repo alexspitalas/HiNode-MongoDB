@@ -96,7 +96,7 @@ public class MultipleTablesModel implements DataModel
             index.put("_id.vid", 1);
             database.getCollection("vertex").createIndex(index);
             
-            index.put("_id.end", 1);
+            index.put("end", 1);
             database.getCollection("vertex").createIndex(index);
             index.remove("_id.vid");
             index.put("_id.start", 1);
@@ -123,7 +123,7 @@ public class MultipleTablesModel implements DataModel
 
             index.clear();
             index.put("_id.start", -1);
-            index.put("_id.end", -1);
+            index.put("end", -1);
             database.getCollection("edge_outgoing").createIndex(index);
 
         }
@@ -152,7 +152,7 @@ public class MultipleTablesModel implements DataModel
         {
             Document id = (Document) row.get("_id");
             int rowstart = Integer.parseInt(id.getString("start").substring(0,4));
-            int rowend = Integer.parseInt(id.getString("end").substring(0,4));
+            int rowend = Integer.parseInt(row.getString("end").substring(0,4));
 
             if (rowend < Integer.parseInt(first) || Integer.parseInt(last) < rowstart) // Assumes correct intervals as input
             {
@@ -193,7 +193,7 @@ public class MultipleTablesModel implements DataModel
         {
             Document id = (Document) row.get("_id");
             String rowstart = id.getString("start");
-            String rowend = id.getString("end");
+            String rowend = row.getString("end");
 
             if (Integer.parseInt(rowend) < Integer.parseInt(first) || Integer.parseInt(last) < Integer.parseInt(rowstart))
             {
@@ -229,7 +229,7 @@ public class MultipleTablesModel implements DataModel
         for (Document row : result)
         {
             Document id = (Document) row.get("_id");
-            String end = id.getString("end");
+            String end = row.getString("end");
             if (Integer.parseInt(timestamp) > Integer.parseInt(end))
             {
                 continue;
@@ -358,7 +358,7 @@ public class MultipleTablesModel implements DataModel
 
             for (Document row : cursor) {
                 Document id = (Document) row.get("_id");
-                String rowend = id.getString("end");
+                String rowend = row.getString("end");
                 if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
                 {
                     continue;
@@ -426,7 +426,7 @@ public class MultipleTablesModel implements DataModel
         for (Document row : rows)
         {
             Document id = (Document) row.get("_id");
-            String rowend = id.getString("end");
+            String rowend = row.getString("end");
             String rowstart = id.getString("start");
 
             int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
@@ -897,11 +897,11 @@ public class MultipleTablesModel implements DataModel
 
         tStart = System.nanoTime();
         for (String vertex : allVertices) {
-            FindIterable<Document> cursor = database.getCollection("edge_outgoing").find(Filters.eq("_id.sourceID", vertex)).projection(Projections.include("_id.start", "_id.end","_id.sourceID")).noCursorTimeout(true);
+            FindIterable<Document> cursor = database.getCollection("edge_outgoing").find(Filters.eq("_id.sourceID", vertex)).projection(Projections.include("_id.start", "end","_id.sourceID")).noCursorTimeout(true);
 
             for (Document row : cursor) {
                 Document id = (Document) row.get("_id");
-                String rowend = id.getString("end").substring(0,4);
+                String rowend = row.getString("end").substring(0,4);
                 if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
                 {
                     continue;
@@ -959,17 +959,20 @@ public class MultipleTablesModel implements DataModel
 
         HashMap<String, HashMap<String, Double>> vertexDegreeInAllInstances = new HashMap<>(); // Holds for each vertex a map containing (Instance,Vertex_count) pairs
         FindIterable<Document> rows  = database.getCollection("edge_outgoing").
-                find(Filters.or(Filters.gte("_id.end",first) , Filters.lte("_id.start",last )))
+                find(Filters.or(Filters.gte("end",first) , Filters.lte("_id.start",last )))
                 .noCursorTimeout(true);
         tStart = System.nanoTime();
         for (Document row : rows)
         {
             Document id = (Document) row.get("_id");
-            String rowend = id.getString("end").substring(0,4);
+            String rowend = row.getString("end").substring(0,4);
+
+            /*
             if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
             {
                 continue;
             }
+            */
 
             String rowstart = id.getString("start").substring(0,4);
             String vid = id.getString("sourceID");
@@ -1083,7 +1086,7 @@ public class MultipleTablesModel implements DataModel
         tStart = System.nanoTime();
         FindIterable<Document> result = database.getCollection("edge_outgoing").find(Filters.and(
                 Filters.eq("_id.sourceID",vid), Filters.lte("_id.start",last )))
-                .projection(Projections.include("_id.end", "_id.targetID")).noCursorTimeout(true);
+                .projection(Projections.include("end", "_id.targetID")).noCursorTimeout(true);
 
         tEnd = System.nanoTime();
         tDelta = tEnd - tStart;
@@ -1094,7 +1097,7 @@ public class MultipleTablesModel implements DataModel
         for (Document row : result)
         {
             Document id = (Document) row.get("_id");
-            String end = id.getString("end").substring(0,4);
+            String end = row.getString("end").substring(0,4);
             if (Integer.parseInt(first) > Integer.parseInt(end))
             {
                 continue;
@@ -1115,11 +1118,11 @@ public class MultipleTablesModel implements DataModel
     {
         DiaNode dn = new DiaNode(vid);
         FindIterable<Document> result = database.getCollection("vertex").find(
-                Filters.eq("_id.vid",vid)).projection(Projections.include("_id.start", "_id.end")).noCursorTimeout(true);
+                Filters.eq("_id.vid",vid)).projection(Projections.include("_id.start", "end")).noCursorTimeout(true);
         Document row = result.first();
         Document id = (Document) row.get("_id");
         String rowstart = id.getString("start");
-        String rowend = id.getString("end");
+        String rowend = row.getString("end");
         dn.setStart(rowstart);
         dn.setEnd(rowend);
 
@@ -1136,7 +1139,7 @@ public class MultipleTablesModel implements DataModel
         for (Document edge : result)
         {
             Document idE = (Document) edge.get("_id");
-            String end = idE.getString("end");
+            String end = edge.getString("end");
             if (Integer.parseInt(end) < Integer.parseInt(first))
             {
                 continue;
@@ -1233,7 +1236,7 @@ public class MultipleTablesModel implements DataModel
                 database.getCollection(table).createIndex(index);
             }
 
-            database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).insertOne(values);
+            database.getCollection(table).insertOne(values);
 
         } catch (Exception e)
         {
@@ -1248,7 +1251,7 @@ public class MultipleTablesModel implements DataModel
         Document update = new Document("$set", new Document("end", end));
         try
         {
-            database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
+            database.getCollection(table).updateOne(query, update);
 
         } catch (Exception e)
         {
@@ -1262,10 +1265,10 @@ public class MultipleTablesModel implements DataModel
         Document values = new Document().append("_id", new Document()
                 .append("sourceID", sourceID)
                 .append("start", start)
-                .append("end", "2099")
                 .append("targetID", targetID)
                 .append("label", label))
-                .append("weight", weight);
+                .append("weight", weight)
+                .append("end", "2099");
         insert("edge_outgoing", values);
         values.clear();
     }
@@ -1274,7 +1277,7 @@ public class MultipleTablesModel implements DataModel
     public void deleteEdge(String sourceID, String targetID, String endTime, String label){
         Document query = new Document("_id.sourceID", sourceID)
             .append("_id.targetID", targetID)
-            .append("label", label);
+            .append("_id.label", label);
 
         delete("edge_outgoing", query, endTime);
 
@@ -1297,8 +1300,8 @@ public class MultipleTablesModel implements DataModel
         }*/
         
         values.put("_id", new Document().append("vid", vid)
-                .append("start", start)
-                .append("end", "2099"));
+                .append("start", start));
+        values.put("end", "2099");
         insert("vertex", values);
         values.clear();
         
@@ -1306,7 +1309,7 @@ public class MultipleTablesModel implements DataModel
 
     @Override
     public void deleteVertex(String vid, String endTime){
-        Document query = new Document("vid", vid);
+        Document query = new Document("_id.vid", vid);
         delete("vertex", query,  endTime);
     }
 
@@ -1316,9 +1319,9 @@ public class MultipleTablesModel implements DataModel
         Document values = new Document();
 
         values.put("_id", new Document().append("vid", id)
-                .append("start", interv.start)
-                .append("end", "2099")
-                .append("value", interv.value));
+                .append("start", interv.start));
+        values.append("value", interv.value)
+                .append("end", "2099");
 
         insert(attribute, values);
         values.clear();

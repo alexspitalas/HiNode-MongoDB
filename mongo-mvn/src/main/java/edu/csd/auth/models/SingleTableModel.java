@@ -705,7 +705,7 @@ public class SingleTableModel implements DataModel {
             tempAttr.add(interv.toDoc());
             // Specify the update operation
             Document update = new Document("$set", new Document(attribute, tempAttr));
-            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
+            database.getCollection("dianode").updateOne(query, update);
         }
 
     }
@@ -730,7 +730,7 @@ public class SingleTableModel implements DataModel {
             
                 // Specify the update operation
                 Document update = new Document("$set", new Document(attribute, tempAttr));
-                database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
+                database.getCollection("dianode").updateOne(query, update);
             }
         }
 
@@ -748,7 +748,7 @@ public class SingleTableModel implements DataModel {
 
         if (edges.isEmpty()) {
             out_edges.add(new Edge(label, weight, targetID, start, "2099").toDoc());
-            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
+            database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", sourceID), Filters.eq("_id.start", id.getString("start"))),
@@ -792,7 +792,7 @@ public class SingleTableModel implements DataModel {
 
         if (edges.isEmpty()) {
             in_edges.add(new Edge(label, weight, targetID, start, "2099").toDoc());
-            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
+            database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", targetID), Filters.eq("_id.start", id.getString("start"))),
@@ -814,7 +814,7 @@ public class SingleTableModel implements DataModel {
 
             edgesUDTList.put(sourceID, in_edges);
 
-            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
+            database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", targetID), Filters.eq("_id.start", id.getString("start"))),
@@ -909,7 +909,7 @@ public class SingleTableModel implements DataModel {
 
             edgesUDTList.put(sourceID, in_edges);
 
-            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
+            database.getCollection("dianode").findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", targetID), Filters.eq("_id.start", id.getString("start"))),
@@ -929,7 +929,7 @@ public class SingleTableModel implements DataModel {
             Document doc = new Document("_id", new Document().append("vid", vid)
                     .append("start", start)
                     .append("end", "2099"));
-            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).insertOne(doc);
+            database.getCollection("dianode").insertOne(doc);
 
         }
 
