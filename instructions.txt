@@ -17,11 +17,7 @@ java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single c
 MT:
 java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local multiple createschema merged_and_sorted_eventsSF10.txt histgraphMT none all 1 1 5 yes
 
-SF3 extended
-ST:
-java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single createschema merged_and_sorted_eventsSF3_extended.txt histgraph none all 1 1 5 yes
-MT:
-java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local multiple createschema merged_and_sorted_eventsSF3_extended.txt histgraphMT none all 1 1 5 yes
+
 
 SF3:
 vertex:25870
@@ -31,8 +27,11 @@ ST:
 16882
 5218
 6597069787743
+java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single schemaexists none histgraph degdistr all 2010 2010 5 yes
+java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single schemaexists none histgraph degdistr all 2010 2011 5 yes
+java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single schemaexists none histgraph degdistr all 2010 2012 5 yes
 java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single schemaexists none histgraph degdistr all 2010 2013 5 yes
-java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single schemaexists none histgraph onehop 16882 2010 2013 5 yes
+java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local sjava -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local multiple schemaexists none histgraphMT degdistr all 2010 2013 5 yesingle schemaexists none histgraph onehop 16882 2010 2013 5 yes
 java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single schemaexists none histgraph onehop 5218 2010 2013 5 yes
 java -jar target/mongo-mvn-1.0-SNAPSHOT-jar-with-dependencies.jar local single schemaexists none histgraph onehop 6597069787743 2010 2013 5 yes
 MT:

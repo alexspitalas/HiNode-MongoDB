@@ -1,0 +1,28 @@
+Datacenter: []; Host: 150.140.142.37:27020; Rack: []
+Datacenter: []; Host: 150.140.142.39:27020; Rack: []
+Datacenter: []; Host: 150.140.142.41:27020; Rack: []
+Datacenter: []; Host: 150.140.142.45:27020; Rack: []
+Time required to create the model: 55.311673224
+Vertices processed: 1000
+Vertices processed: 2000
+Vertices processed: 3000
+Vertices processed: 4000
+Vertices processed: 5000
+Vertices processed: 6000
+Vertices processed: 7000
+Vertices processed: 8000
+Vertices processed: 9000
+Vertices processed: 10000
+Vertices processed: 11000
+Vertices processed: 12000
+Vertices processed: 13000
+Vertices processed: 14000
+Vertices processed: 15000
+Vertices processed: 16000
+Vertices processed: 17000
+Vertices processed: 18000
+Vertices processed: 19000
+Vertices processed: 20000
+Vertices processed: 21000
+Vertices processed: 22000
+Vertices processed: 23000

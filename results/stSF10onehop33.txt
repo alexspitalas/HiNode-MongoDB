@@ -1,0 +1,30 @@
+Datacenter: []; Host: 150.140.142.37:27020; Rack: []
+Datacenter: []; Host: 150.140.142.39:27020; Rack: []
+Datacenter: []; Host: 150.140.142.41:27020; Rack: []
+Datacenter: []; Host: 150.140.142.45:27020; Rack: []
+Time required for retrieving the outgoing edges of a diachronic node: 0.087 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Time required for extracting the neighbors of a vertex: 0.122 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.122834782 seconds, (Query Range: [2009, 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.122834782 seconds, (Query Range: [2009, 2011])result:[]
+***FIRST ITERATION. IGNORING TIME.***
+Time required for retrieving the outgoing edges of a diachronic node: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Time required for extracting the neighbors of a vertex: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.00307434 seconds, (Query Range: [2009, 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.00307434 seconds, (Query Range: [2009, 2011])result:[]
+Time required for retrieving the outgoing edges of a diachronic node: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Time required for extracting the neighbors of a vertex: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.0032857 seconds, (Query Range: [2009, 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.0032857 seconds, (Query Range: [2009, 2011])result:[]
+Time required for retrieving the outgoing edges of a diachronic node: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Time required for extracting the neighbors of a vertex: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.003137845 seconds, (Query Range: [2009, 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.003137845 seconds, (Query Range: [2009, 2011])result:[]
+Time required for retrieving the outgoing edges of a diachronic node: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Time required for extracting the neighbors of a vertex: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.002997125 seconds, (Query Range: [2009, 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.002997125 seconds, (Query Range: [2009, 2011])result:[]
+Time required for retrieving the outgoing edges of a diachronic node: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Time required for extracting the neighbors of a vertex: 0.003 seconds, (OneHop on VID, Timestamps: [30786325611063, 2009 to 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.002830198 seconds, (Query Range: [2009, 2011])
+Average time required for One Hop Neighborhood (over vertex '30786325611063'): 0.002830198 seconds, (Query Range: [2009, 2011])result:[]
+Average time required for performing the 'onehop' special operation in the 'single' model (over 5 iterations): 0.003191283

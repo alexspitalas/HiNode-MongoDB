@@ -1,0 +1,42 @@
+Datacenter: []; Host: 150.140.142.37:27020; Rack: []
+Datacenter: []; Host: 150.140.142.39:27020; Rack: []
+Datacenter: []; Host: 150.140.142.41:27020; Rack: []
+Datacenter: []; Host: 150.140.142.45:27020; Rack: []
+Time required for retrieving [start,end] info for all vertices: 0.012770006 seconds, (Query Range: [2010, 2010])
+Time required for processing the info into a HashMap: 0.701186533 seconds, (Query Range: [2010, 2010])
+Time required for retrieving the edges from the relevant alive nodes: 1.01E-7 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 47.884666316 seconds.
+Time elapsed for the DegDistr query: 48.654743648 seconds, (Query Range: [2010, 2010]) result:{2010={44=3, 45=3, 46=1, 47=2, 48=2, 49=5, 51=2, 52=2, 53=1, 10=212, 54=3, 11=169, 12=130, 56=1, 13=135, 14=99, 58=1, 15=91, 59=2, 16=78, 17=51, 18=49, 19=46, 1=3613, 2=1644, 3=1048, 4=684, 5=531, 6=450, 7=363, 8=329, 9=281, 60=1, 62=2, 20=38, 21=25, 65=1, 22=19, 66=1, 23=11, 24=22, 68=1, 25=16, 26=9, 27=11, 28=3, 29=6, 30=7, 74=1, 31=9, 32=9, 33=5, 77=1, 34=2, 35=6, 36=7, 37=1, 38=3, 39=4, 40=2, 84=1, 41=3, 42=3}}
+***FIRST ITERATION. IGNORING TIME.***
+Time required for retrieving [start,end] info for all vertices: 5.4106E-5 seconds, (Query Range: [2010, 2010])
+Time required for processing the info into a HashMap: 0.24092507 seconds, (Query Range: [2010, 2010])
+Time required for retrieving the edges from the relevant alive nodes: 2.8E-8 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 53.482110578 seconds.
+Time elapsed for the DegDistr query: 53.724073546 seconds, (Query Range: [2010, 2010]) result:{2010={44=3, 45=3, 46=1, 47=2, 48=2, 49=5, 51=2, 52=2, 53=1, 10=212, 54=3, 11=169, 12=130, 56=1, 13=135, 14=99, 58=1, 15=91, 59=2, 16=78, 17=51, 18=49, 19=46, 1=3613, 2=1644, 3=1048, 4=684, 5=531, 6=450, 7=363, 8=329, 9=281, 60=1, 62=2, 20=38, 21=25, 65=1, 22=19, 66=1, 23=11, 24=22, 68=1, 25=16, 26=9, 27=11, 28=3, 29=6, 30=7, 74=1, 31=9, 32=9, 33=5, 77=1, 34=2, 35=6, 36=7, 37=1, 38=3, 39=4, 40=2, 84=1, 41=3, 42=3}}
+Time required for retrieving [start,end] info for all vertices: 7.8329E-5 seconds, (Query Range: [2010, 2010])
+Time required for processing the info into a HashMap: 0.270531854 seconds, (Query Range: [2010, 2010])
+Time required for retrieving the edges from the relevant alive nodes: 2.8E-8 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 51.216240965 seconds.
+Time elapsed for the DegDistr query: 51.487759422 seconds, (Query Range: [2010, 2010]) result:{2010={44=3, 45=3, 46=1, 47=2, 48=2, 49=5, 51=2, 52=2, 53=1, 10=212, 54=3, 11=169, 12=130, 56=1, 13=135, 14=99, 58=1, 15=91, 59=2, 16=78, 17=51, 18=49, 19=46, 1=3613, 2=1644, 3=1048, 4=684, 5=531, 6=450, 7=363, 8=329, 9=281, 60=1, 62=2, 20=38, 21=25, 65=1, 22=19, 66=1, 23=11, 24=22, 68=1, 25=16, 26=9, 27=11, 28=3, 29=6, 30=7, 74=1, 31=9, 32=9, 33=5, 77=1, 34=2, 35=6, 36=7, 37=1, 38=3, 39=4, 40=2, 84=1, 41=3, 42=3}}
+Time required for retrieving [start,end] info for all vertices: 8.1077E-5 seconds, (Query Range: [2010, 2010])
+Time required for processing the info into a HashMap: 0.271968302 seconds, (Query Range: [2010, 2010])
+Time required for retrieving the edges from the relevant alive nodes: 3.2E-8 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 49.690399316 seconds.
+Time elapsed for the DegDistr query: 49.963063448 seconds, (Query Range: [2010, 2010]) result:{2010={44=3, 45=3, 46=1, 47=2, 48=2, 49=5, 51=2, 52=2, 53=1, 10=212, 54=3, 11=169, 12=130, 56=1, 13=135, 14=99, 58=1, 15=91, 59=2, 16=78, 17=51, 18=49, 19=46, 1=3613, 2=1644, 3=1048, 4=684, 5=531, 6=450, 7=363, 8=329, 9=281, 60=1, 62=2, 20=38, 21=25, 65=1, 22=19, 66=1, 23=11, 24=22, 68=1, 25=16, 26=9, 27=11, 28=3, 29=6, 30=7, 74=1, 31=9, 32=9, 33=5, 77=1, 34=2, 35=6, 36=7, 37=1, 38=3, 39=4, 40=2, 84=1, 41=3, 42=3}}
+Time required for retrieving [start,end] info for all vertices: 1.21565E-4 seconds, (Query Range: [2010, 2010])
+Time required for processing the info into a HashMap: 0.240896812 seconds, (Query Range: [2010, 2010])
+Time required for retrieving the edges from the relevant alive nodes: 2.7E-8 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 51.52805948 seconds.
+Time elapsed for the DegDistr query: 51.769964541 seconds, (Query Range: [2010, 2010]) result:{2010={44=3, 45=3, 46=1, 47=2, 48=2, 49=5, 51=2, 52=2, 53=1, 10=212, 54=3, 11=169, 12=130, 56=1, 13=135, 14=99, 58=1, 15=91, 59=2, 16=78, 17=51, 18=49, 19=46, 1=3613, 2=1644, 3=1048, 4=684, 5=531, 6=450, 7=363, 8=329, 9=281, 60=1, 62=2, 20=38, 21=25, 65=1, 22=19, 66=1, 23=11, 24=22, 68=1, 25=16, 26=9, 27=11, 28=3, 29=6, 30=7, 74=1, 31=9, 32=9, 33=5, 77=1, 34=2, 35=6, 36=7, 37=1, 38=3, 39=4, 40=2, 84=1, 41=3, 42=3}}
+Time required for retrieving [start,end] info for all vertices: 5.3889E-5 seconds, (Query Range: [2010, 2010])
+Time required for processing the info into a HashMap: 0.267562461 seconds, (Query Range: [2010, 2010])
+Time required for retrieving the edges from the relevant alive nodes: 2.7E-8 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 54.020961736 seconds.
+Time elapsed for the DegDistr query: 54.290032004 seconds, (Query Range: [2010, 2010]) result:{2010={44=3, 45=3, 46=1, 47=2, 48=2, 49=5, 51=2, 52=2, 53=1, 10=212, 54=3, 11=169, 12=130, 56=1, 13=135, 14=99, 58=1, 15=91, 59=2, 16=78, 17=51, 18=49, 19=46, 1=3613, 2=1644, 3=1048, 4=684, 5=531, 6=450, 7=363, 8=329, 9=281, 60=1, 62=2, 20=38, 21=25, 65=1, 22=19, 66=1, 23=11, 24=22, 68=1, 25=16, 26=9, 27=11, 28=3, 29=6, 30=7, 74=1, 31=9, 32=9, 33=5, 77=1, 34=2, 35=6, 36=7, 37=1, 38=3, 39=4, 40=2, 84=1, 41=3, 42=3}}
+Average time required for performing the 'degdistr' special operation in the 'multiple' model (over 5 iterations): 52.247386745
