@@ -3,7 +3,6 @@ package edu.csd.auth.models;
 import static edu.csd.auth.models.DataModel.getRandomString;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 //import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -964,7 +963,7 @@ public class MultipleTablesModel implements DataModel
     {
         long tStart, tEnd, tDelta;
 
-        HashMap<String, HashMap<String, Double>> vertexDegreeInAllInstances = new HashMap<>(); // Holds for each vertex a map containing (Instance,Vertex_count) pairs
+        HashMap<String, HashMap<String, Integer>> vertexDegreeInAllInstances = new HashMap<>(); // Holds for each vertex a map containing (Instance,Vertex_count) pairs
 
         ConcurrentLinkedQueue<Document> rows = getAllEdgesAndFilterAlive(first, last);
 
@@ -988,27 +987,27 @@ public class MultipleTablesModel implements DataModel
             {
                 vertexDegreeInAllInstances.put(vid, new HashMap<>());
             }
-            HashMap<String, Double> vertexDegrees = vertexDegreeInAllInstances.get(vid);
+            HashMap<String, Integer> vertexDegrees = vertexDegreeInAllInstances.get(vid);
             for (int i = start; i <= end; i++)
             {
                 if (!vertexDegrees.containsKey("" + i))
                 {
-                    vertexDegrees.put("" + i, 0.0);
+                    vertexDegrees.put("" + i, 0);
                 }
-                vertexDegrees.put("" + i, vertexDegrees.get("" + i) + 1.0);
+                vertexDegrees.put("" + i, vertexDegrees.get("" + i) + 1);
             }
         }
 
         HashMap<String, HashMap<String, Integer>> results = new HashMap<>();
         for (String s_vid : vertexDegreeInAllInstances.keySet())
         {
-            HashMap<String, Double> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
+            HashMap<String, Integer> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
 
             for (String instance : s_vertexDegrees.keySet())
             {
-                Double degree = s_vertexDegrees.get(instance);
+                Integer degree = s_vertexDegrees.get(instance);
                 HashMap<String, Integer> degreeDistr = results.get(instance.toString());
-                if (degreeDistr ==null)
+                if (degreeDistr == null)
                 {
                     degreeDistr = new HashMap<>();
                 }
@@ -1089,7 +1088,7 @@ public class MultipleTablesModel implements DataModel
 
         tStart = System.nanoTime();
         FindIterable<Document> result = database.getCollection("edge_outgoing").find(Filters.and(
-                Filters.eq("id_sourceID",vid), Filters.lte("_id.start",last )))
+                Filters.eq("_id.sourceID",vid), Filters.lte("_id.start",last )))
                 .projection(Projections.include("_id.end", "_id.targetID")).noCursorTimeout(true);
 
         tEnd = System.nanoTime();
@@ -1231,7 +1230,7 @@ public class MultipleTablesModel implements DataModel
         try
         {
 
-            database.getCollection(table).withWriteConcern(WriteConcern.MAJORITY).insertOne(values);
+            database.getCollection(table).insertOne(values);
 
         } catch (Exception e)
         {

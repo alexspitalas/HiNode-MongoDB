@@ -1,0 +1,24 @@
+Datacenter: []; Host: 150.140.142.37:27020; Rack: []
+Datacenter: []; Host: 150.140.142.39:27020; Rack: []
+Datacenter: []; Host: 150.140.142.41:27020; Rack: []
+Datacenter: []; Host: 150.140.142.45:27020; Rack: []
+Time required for retrieving all outgoing edges of all nodes: 59.449702841 seconds.
+Time required for processing and evaluating the DegDistr query: 1.37558E-4 seconds.
+Time elapsed for the DegDistrAll query: 59.458120659 seconds, (Query Range: [0, 1]) result:{}
+***FIRST ITERATION. IGNORING TIME.***
+Time required for retrieving all outgoing edges of all nodes: 58.189030708 seconds.
+Time required for processing and evaluating the DegDistr query: 4.534E-6 seconds.
+Time elapsed for the DegDistrAll query: 58.18924761 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving all outgoing edges of all nodes: 58.131903514 seconds.
+Time required for processing and evaluating the DegDistr query: 4.094E-6 seconds.
+Time elapsed for the DegDistrAll query: 58.13210376 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving all outgoing edges of all nodes: 58.143112239 seconds.
+Time required for processing and evaluating the DegDistr query: 4.446E-6 seconds.
+Time elapsed for the DegDistrAll query: 58.143263721 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving all outgoing edges of all nodes: 58.265885028 seconds.
+Time required for processing and evaluating the DegDistr query: 4.441E-6 seconds.
+Time elapsed for the DegDistrAll query: 58.266039719 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving all outgoing edges of all nodes: 57.975992512 seconds.
+Time required for processing and evaluating the DegDistr query: 4.366E-6 seconds.
+Time elapsed for the DegDistrAll query: 57.976325602 seconds, (Query Range: [0, 1]) result:{}
+Average time required for performing the 'degdistrall' special operation in the 'multiple' model (over 5 iterations): 58.141448167

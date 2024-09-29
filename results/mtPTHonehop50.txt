@@ -1,0 +1,30 @@
+Datacenter: []; Host: 150.140.142.37:27020; Rack: []
+Datacenter: []; Host: 150.140.142.39:27020; Rack: []
+Datacenter: []; Host: 150.140.142.41:27020; Rack: []
+Datacenter: []; Host: 150.140.142.45:27020; Rack: []
+Time required for retrieving all the relevant outgoing edges: 0.013045779 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Time required for extracting the neighbors of a vertex: 0.062192253 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.129004026 seconds, (Query Range: [0, 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.129004026 seconds, (Query Range: [0, 66])result:[14536, 14685, 14855, 15346, 17106, 17247, 17266, 17280, 17311, 17446, 17974, 18206, 18335, 18512]
+***FIRST ITERATION. IGNORING TIME.***
+Time required for retrieving all the relevant outgoing edges: 4.4311E-5 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Time required for extracting the neighbors of a vertex: 0.003860155 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.00414963 seconds, (Query Range: [0, 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.00414963 seconds, (Query Range: [0, 66])result:[14536, 14685, 14855, 15346, 17106, 17247, 17266, 17280, 17311, 17446, 17974, 18206, 18335, 18512]
+Time required for retrieving all the relevant outgoing edges: 1.47585E-4 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Time required for extracting the neighbors of a vertex: 0.003579457 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.004041616 seconds, (Query Range: [0, 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.004041616 seconds, (Query Range: [0, 66])result:[14536, 14685, 14855, 15346, 17106, 17247, 17266, 17280, 17311, 17446, 17974, 18206, 18335, 18512]
+Time required for retrieving all the relevant outgoing edges: 5.268E-5 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Time required for extracting the neighbors of a vertex: 0.003575565 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.003893322 seconds, (Query Range: [0, 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.003893322 seconds, (Query Range: [0, 66])result:[14536, 14685, 14855, 15346, 17106, 17247, 17266, 17280, 17311, 17446, 17974, 18206, 18335, 18512]
+Time required for retrieving all the relevant outgoing edges: 4.5305E-5 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Time required for extracting the neighbors of a vertex: 0.003407212 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.003671656 seconds, (Query Range: [0, 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.003671656 seconds, (Query Range: [0, 66])result:[14536, 14685, 14855, 15346, 17106, 17247, 17266, 17280, 17311, 17446, 17974, 18206, 18335, 18512]
+Time required for retrieving all the relevant outgoing edges: 4.4816E-5 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Time required for extracting the neighbors of a vertex: 0.003501964 seconds, (OneHop on VID, Timestamps: [18904, 0 to 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.003781062 seconds, (Query Range: [0, 66])
+Average time required for One Hop Neighborhood (over vertex '18904'): 0.003781062 seconds, (Query Range: [0, 66])result:[14536, 14685, 14855, 15346, 17106, 17247, 17266, 17280, 17311, 17446, 17974, 18206, 18335, 18512]
+Average time required for performing the 'onehop' special operation in the 'multiple' model (over 5 iterations): 0.004090241

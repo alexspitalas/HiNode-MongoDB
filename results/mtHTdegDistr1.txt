@@ -1,0 +1,42 @@
+Datacenter: []; Host: 150.140.142.37:27020; Rack: []
+Datacenter: []; Host: 150.140.142.39:27020; Rack: []
+Datacenter: []; Host: 150.140.142.41:27020; Rack: []
+Datacenter: []; Host: 150.140.142.45:27020; Rack: []
+Time required for retrieving [start,end] info for all vertices: 0.007231257 seconds, (Query Range: [0, 1])
+Time required for processing the info into a HashMap: 0.295339073 seconds, (Query Range: [0, 1])
+Time required for retrieving the edges from the relevant alive nodes: 1.54E-7 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 0.00915951 seconds.
+Time elapsed for the DegDistr query: 0.356406899 seconds, (Query Range: [0, 1]) result:{}
+***FIRST ITERATION. IGNORING TIME.***
+Time required for retrieving [start,end] info for all vertices: 2.9048E-5 seconds, (Query Range: [0, 1])
+Time required for processing the info into a HashMap: 0.184435966 seconds, (Query Range: [0, 1])
+Time required for retrieving the edges from the relevant alive nodes: 1.39E-7 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 0.008795017 seconds.
+Time elapsed for the DegDistr query: 0.193684624 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving [start,end] info for all vertices: 2.8889E-5 seconds, (Query Range: [0, 1])
+Time required for processing the info into a HashMap: 0.111776401 seconds, (Query Range: [0, 1])
+Time required for retrieving the edges from the relevant alive nodes: 7.4E-8 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 0.003755013 seconds.
+Time elapsed for the DegDistr query: 0.115877188 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving [start,end] info for all vertices: 1.2912E-5 seconds, (Query Range: [0, 1])
+Time required for processing the info into a HashMap: 0.137251417 seconds, (Query Range: [0, 1])
+Time required for retrieving the edges from the relevant alive nodes: 1.47E-7 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 0.00503428 seconds.
+Time elapsed for the DegDistr query: 0.143170613 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving [start,end] info for all vertices: 1.5935E-5 seconds, (Query Range: [0, 1])
+Time required for processing the info into a HashMap: 0.089903803 seconds, (Query Range: [0, 1])
+Time required for retrieving the edges from the relevant alive nodes: 1.1E-7 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 0.005146645 seconds.
+Time elapsed for the DegDistr query: 0.09556733 seconds, (Query Range: [0, 1]) result:{}
+Time required for retrieving [start,end] info for all vertices: 6.1707E-5 seconds, (Query Range: [0, 1])
+Time required for processing the info into a HashMap: 0.110894064 seconds, (Query Range: [0, 1])
+Time required for retrieving the edges from the relevant alive nodes: 9.7E-8 seconds.
+First map finished.
+Time required for processing and evaluating the DegDistr query: 0.004380192 seconds.
+Time elapsed for the DegDistr query: 0.116007316 seconds, (Query Range: [0, 1]) result:{}
+Average time required for performing the 'degdistr' special operation in the 'multiple' model (over 5 iterations): 0.13292695

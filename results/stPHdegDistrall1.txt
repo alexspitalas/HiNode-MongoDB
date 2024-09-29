@@ -1,0 +1,30 @@
+Datacenter: []; Host: 150.140.142.37:27020; Rack: []
+Datacenter: []; Host: 150.140.142.39:27020; Rack: []
+Datacenter: []; Host: 150.140.142.41:27020; Rack: []
+Datacenter: []; Host: 150.140.142.45:27020; Rack: []
+Time required for retrieving all the diachronic nodes: 0.028 seconds
+Time required for filtering out the alive diachronic nodes: 0.841 seconds, (Query Range: [0, 1])
+Time required for processing and evaluating the DegDistrAll query: 0.012 seconds.
+Time elapsed for the DegDistrAll query: 0.939002447 seconds, (Query Range: [0, 1]) result:{0={0.0=2}, 1={0.0=22}}
+***FIRST ITERATION. IGNORING TIME.***
+Time required for retrieving all the diachronic nodes: 0.0 seconds
+Time required for filtering out the alive diachronic nodes: 0.587 seconds, (Query Range: [0, 1])
+Time required for processing and evaluating the DegDistrAll query: 0.0 seconds.
+Time elapsed for the DegDistrAll query: 0.586997716 seconds, (Query Range: [0, 1]) result:{0={0.0=2}, 1={0.0=22}}
+Time required for retrieving all the diachronic nodes: 0.0 seconds
+Time required for filtering out the alive diachronic nodes: 0.52 seconds, (Query Range: [0, 1])
+Time required for processing and evaluating the DegDistrAll query: 0.0 seconds.
+Time elapsed for the DegDistrAll query: 0.52023767 seconds, (Query Range: [0, 1]) result:{0={0.0=2}, 1={0.0=22}}
+Time required for retrieving all the diachronic nodes: 0.0 seconds
+Time required for filtering out the alive diachronic nodes: 0.467 seconds, (Query Range: [0, 1])
+Time required for processing and evaluating the DegDistrAll query: 0.0 seconds.
+Time elapsed for the DegDistrAll query: 0.467919337 seconds, (Query Range: [0, 1]) result:{0={0.0=2}, 1={0.0=22}}
+Time required for retrieving all the diachronic nodes: 0.0 seconds
+Time required for filtering out the alive diachronic nodes: 0.491 seconds, (Query Range: [0, 1])
+Time required for processing and evaluating the DegDistrAll query: 0.0 seconds.
+Time elapsed for the DegDistrAll query: 0.491587094 seconds, (Query Range: [0, 1]) result:{0={0.0=2}, 1={0.0=22}}
+Time required for retrieving all the diachronic nodes: 0.0 seconds
+Time required for filtering out the alive diachronic nodes: 0.43 seconds, (Query Range: [0, 1])
+Time required for processing and evaluating the DegDistrAll query: 0.0 seconds.
+Time elapsed for the DegDistrAll query: 0.430081696 seconds, (Query Range: [0, 1]) result:{0={0.0=2}, 1={0.0=22}}
+Average time required for performing the 'degdistrall' special operation in the 'single' model (over 5 iterations): 0.499437523
