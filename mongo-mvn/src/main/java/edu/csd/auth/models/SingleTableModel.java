@@ -591,10 +591,8 @@ public class SingleTableModel implements DataModel {
         for (String targetID : outgoing_edges.keySet()) {
             List<Edge> edges = outgoing_edges.get(targetID);
             for (Edge edge : edges)
-                if ((Integer.parseInt(first) >= Integer.parseInt(edge.start.substring(0,4))
-                        && Integer.parseInt(first) < Integer.parseInt(edge.end.substring(0,4))) ||
-                        (Integer.parseInt(last) >= Integer.parseInt(edge.start.substring(0,4))
-                        && Integer.parseInt(last) < Integer.parseInt(edge.end.substring(0,4)))) {
+                if ((Integer.parseInt(last) >= Integer.parseInt(edge.start.substring(0,4))
+                        && Integer.parseInt(first) < Integer.parseInt(edge.end.substring(0,4)))) {
                     results.add(targetID);
                     break;
                 }
@@ -682,7 +680,7 @@ public class SingleTableModel implements DataModel {
      * }
      */
 @Override
-    public void insertAttribute(String id, String attribute, Interval interv) {
+    public void insertAttribute(String id, String attribute, Interval interv, String label) {
         FindIterable<Document> t = database.getCollection("dianode").find(Filters.eq("_id.vid", id));
         if (t.cursor().hasNext()) {
             Document current = t.first();
@@ -705,13 +703,13 @@ public class SingleTableModel implements DataModel {
             tempAttr.add(interv.toDoc());
             // Specify the update operation
             Document update = new Document("$set", new Document(attribute, tempAttr));
-            database.getCollection("dianode").updateOne(query, update);
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
         }
 
     }
 
     @Override
-    public void deleteAttribute(String id, String attribute, String end) {
+    public void deleteAttribute(String id, String attribute, String end, String label) {
         FindIterable<Document> t = database.getCollection("dianode").find(Filters.eq("_id.vid", id));
         if (t.cursor().hasNext()) {
             Document current = t.first();
@@ -730,7 +728,7 @@ public class SingleTableModel implements DataModel {
             
                 // Specify the update operation
                 Document update = new Document("$set", new Document(attribute, tempAttr));
-                database.getCollection("dianode").updateOne(query, update);
+                database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).updateOne(query, update);
             }
         }
 
@@ -748,7 +746,7 @@ public class SingleTableModel implements DataModel {
 
         if (edges.isEmpty()) {
             out_edges.add(new Edge(label, weight, targetID, start, "2099").toDoc());
-            database.getCollection("dianode").findOneAndUpdate(
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", sourceID), Filters.eq("_id.start", id.getString("start"))),
@@ -792,7 +790,7 @@ public class SingleTableModel implements DataModel {
 
         if (edges.isEmpty()) {
             in_edges.add(new Edge(label, weight, targetID, start, "2099").toDoc());
-            database.getCollection("dianode").findOneAndUpdate(
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", targetID), Filters.eq("_id.start", id.getString("start"))),
@@ -814,7 +812,7 @@ public class SingleTableModel implements DataModel {
 
             edgesUDTList.put(sourceID, in_edges);
 
-            database.getCollection("dianode").findOneAndUpdate(
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", targetID), Filters.eq("_id.start", id.getString("start"))),
@@ -909,7 +907,7 @@ public class SingleTableModel implements DataModel {
 
             edgesUDTList.put(sourceID, in_edges);
 
-            database.getCollection("dianode").findOneAndUpdate(
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).findOneAndUpdate(
                     Filters.and(
                             Filters.and(
                                     Filters.eq("_id.vid", targetID), Filters.eq("_id.start", id.getString("start"))),
@@ -920,7 +918,7 @@ public class SingleTableModel implements DataModel {
     }
 
     @Override
-    public void insertVertex(String vid, String start) {
+    public void insertVertex(String vid, String start, String label) {
         // DiaNode ver = new DiaNode(vid, start, end);
 
         FindIterable<Document> t = database.getCollection("dianode").find(Filters.eq("_id.vid", vid));
@@ -929,14 +927,14 @@ public class SingleTableModel implements DataModel {
             Document doc = new Document("_id", new Document().append("vid", vid)
                     .append("start", start)
                     .append("end", "2099"));
-            database.getCollection("dianode").insertOne(doc);
+            database.getCollection("dianode").withWriteConcern(WriteConcern.MAJORITY).insertOne(doc);
 
         }
 
     }
 
     @Override
-    public void deleteVertex(String vid, String end) {
+    public void deleteVertex(String vid, String end, String label) {
         // DiaNode ver = new DiaNode(vid, start, end);
 
         FindIterable<Document> t = database.getCollection("dianode").find(Filters.eq("_id.vid", vid));
@@ -950,7 +948,6 @@ public class SingleTableModel implements DataModel {
 
     }
 
-    @Override
     public void parseInput(String input) {
         try {
             //int snap_count = DataModel.getCountOfSnapshotsInInput(input);
@@ -965,7 +962,7 @@ public class SingleTableModel implements DataModel {
                 if (line.startsWith("vertex")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 4)
+                    if (tokens.length != 5)
                     {
                         System.out.println("Wrong number of attributes (insert vertex)");
                         System.out.println(line);
@@ -973,43 +970,43 @@ public class SingleTableModel implements DataModel {
                     }
                     
                     String verID = tokens[1];
-                    String start;
-                    start = tokens[3];
-                    
-                    insertVertex(verID, start);
+                    String label = tokens[2];
+                    String start = tokens[4];
+
+                    insertVertex(verID, start, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);
                 }else if (line.startsWith("delete vertex")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 4)
+                    if (tokens.length != 5)
                     {
                         System.out.println("Wrong number of attributes (delete vertex)");
                         System.out.println(line);
                         break;
                     }
                     String verID = tokens[2];
-                    String end;
-                    end = tokens[3];
+                    String label = tokens[3];
+                    String end = tokens[4];
                     
-                    deleteVertex(verID, end);
+                    deleteVertex(verID, end, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);
                 } else if (line.startsWith("edge")) {
                     tokens = line.split(" ");
-                    if (tokens.length != 5)
+                    if (tokens.length != 6)
                     {
                         System.out.println("Wrong number of attributes (insert edge)");
                         System.out.println(line);
                         break;
                     }
-                    String sourceID = tokens[1];
-                    String targetID = tokens[2];
+                    String label = tokens[1];
+                    String sourceID = tokens[2];
+                    String targetID = tokens[3];
                     String weight = "1";
-                    String label = "Person knows person";
-                    String start = tokens[4];
+                    String start = tokens[5];
                     
                     insertEdge(sourceID, targetID, start, label, weight);
                     edgeKcounter++;
@@ -1017,16 +1014,16 @@ public class SingleTableModel implements DataModel {
                         System.out.println("Edges processed: " + edgeKcounter);
                 }else if (line.startsWith("delete edge")) {
                     tokens = line.split(" ");
-                    if (tokens.length != 5)
+                    if (tokens.length != 6)
                     {
                         System.out.println("Wrong number of attributes (delete edge)");
                         System.out.println(line);
                         break;
                     }
-                    String sourceID = tokens[2];
-                    String targetID = tokens[3];
-                    String label = "Person knows person";
-                    String end = tokens[4];
+                    String label = tokens[2];
+                    String sourceID = tokens[3];
+                    String targetID = tokens[4];
+                    String end = tokens[5];
                     
                     deleteEdge(sourceID, targetID, end, label);
                     edgeKcounter++;
@@ -1035,7 +1032,7 @@ public class SingleTableModel implements DataModel {
                 } else if (line.startsWith("Add attribute")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length < 6)
+                    if (tokens.length < 7)
                     {
                         System.out.println("Wrong number of attributes (add attribute)");
                         System.out.println(line);
@@ -1044,11 +1041,12 @@ public class SingleTableModel implements DataModel {
                     
                     String verID = tokens[2];
                     String label = tokens[3];
-                    String labelV = String.join(",", Arrays.copyOfRange(tokens, 4, tokens.length - 1));
+                    String attr = tokens[4];
+                    String attrV = String.join(",", Arrays.copyOfRange(tokens, 5, tokens.length - 1));
                     String start = tokens[tokens.length -1];
                     
-                    Interval temp = new Interval(labelV, start, "2099");
-                    insertAttribute(verID, label, temp);
+                    Interval temp = new Interval(attrV, start, "2099");
+                    insertAttribute(verID, attr, temp, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);
@@ -1056,7 +1054,7 @@ public class SingleTableModel implements DataModel {
                 else if (line.startsWith("Delete attribute")) {
                     tokens = line.split(" ");
                     
-                    if (tokens.length != 6)
+                    if (tokens.length != 7)
                     {
                         System.out.println("Wrong number of attributes (delete attribute)");
                         System.out.println(line);
@@ -1065,9 +1063,10 @@ public class SingleTableModel implements DataModel {
                     
                     String verID = tokens[2];
                     String label = tokens[3];
-                    String end = tokens[4];
+                    String attr = tokens[4];
+                    String end = tokens[5];
 
-                    deleteAttribute(verID, label, end);
+                    deleteAttribute(verID, attr, end, label);
                     verKcounter++;
                     if (verKcounter % 1000 == 0)
                         System.out.println("Vertices processed: " + verKcounter);

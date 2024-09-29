@@ -26,10 +26,10 @@ public interface DataModel
     public void useKeyspace();
     public abstract void parseInput(String input);
 
-    public abstract void insertVertex(String vid, String startTime);
-    public abstract void deleteVertex(String vid, String endTime);
-    public abstract void insertAttribute(String id, String attribute, Interval interv);
-    public abstract void deleteAttribute(String id, String attribute, String end);
+    public abstract void insertVertex(String vid, String startTime, String label);
+    public abstract void deleteVertex(String vid, String endTime, String label);
+    public abstract void insertAttribute(String id, String attribute, Interval interv, String label);
+    public abstract void deleteAttribute(String id, String attribute, String end, String label);
     public abstract void insertEdge(String sourceID, String targetID, String startTime, String label, String weight);
     public abstract void deleteEdge(String sourceID, String targetID, String endTime, String label);
     public abstract void updateVertexAttribute(String vid, String attrName, String attrValue, String timestamp);

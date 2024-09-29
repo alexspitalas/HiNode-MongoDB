@@ -2,10 +2,13 @@ package edu.csd.auth.core;
 //MongoDB implementaion of HiNode model
 //working models are SingleTableModel and MultipleTableModel
 import com.mongodb.MongoClientSettings;
+import com.mongodb.ReadConcern;
 import com.mongodb.ServerAddress;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.connection.ClusterConnectionMode;
 import com.mongodb.connection.ServerDescription;
 import edu.csd.auth.models.DataModel;
 import edu.csd.auth.models.MultipleTablesModel;
@@ -129,7 +132,7 @@ public class MongoClientProject
                     host = "127.0.0.1";
                     break;
                 case "cluster":
-                    host = "155.207.131.66";
+                    host = "";
                     break;
                 default:
                     System.out.println("Please specify a valid execution setting (local/cluster). Exiting...");
@@ -137,7 +140,7 @@ public class MongoClientProject
             }
 
             //final String[] hosts = host.split(",");
-            Integer port = 27017;
+            Integer port = 27020;
             /*
             PoolingOptions opts = new PoolingOptions();
             opts.setMaxRequestsPerConnection(HostDistance.LOCAL, 32768).setMaxRequestsPerConnection(HostDistance.REMOTE, 2000);
@@ -166,10 +169,14 @@ public class MongoClientProject
                 mongoClient = MongoClients.create();
             }else{
                 mongoClient = MongoClients.create(
-                        MongoClientSettings.builder()
-                                .applyToClusterSettings(builder ->
-                                        builder.hosts(hosts))
-                                .build());
+                    MongoClientSettings.builder()
+                            .applyToClusterSettings(builder ->
+                                    builder.hosts(hosts)
+                                    .mode(ClusterConnectionMode.MULTIPLE)
+                                    )
+                            .writeConcern(WriteConcern.MAJORITY)
+                            .readConcern(ReadConcern.MAJORITY)
+                            .build());
             }
 
 
