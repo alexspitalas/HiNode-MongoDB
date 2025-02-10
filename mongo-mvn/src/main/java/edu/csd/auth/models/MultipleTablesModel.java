@@ -4,10 +4,8 @@ import static edu.csd.auth.models.DataModel.getRandomString;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
-//import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-//import com.mongodb.client.model.Indexes;
 import com.mongodb.client.model.Projections;
 import edu.csd.auth.utils.DiaNode;
 import edu.csd.auth.utils.Edge;
@@ -15,7 +13,6 @@ import edu.csd.auth.utils.Interval;
 import edu.csd.auth.utils.SnapshotResult;
 import edu.csd.auth.utils.Vertex;
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
@@ -32,11 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-//import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-//import java.util.concurrent.CountDownLatch;
-//import java.util.concurrent.ExecutorService;
-//import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,8 +41,6 @@ import org.bson.Document;
 public class MultipleTablesModel implements DataModel
 {
 
-    private String keyspace ;
-    private MongoClient client ;
     private MongoDatabase database ;
 
     public static String bb_to_str(ByteBuffer buffer)
@@ -73,8 +64,7 @@ public class MultipleTablesModel implements DataModel
 
     public MultipleTablesModel(MongoClient client, String keyspace)
     {
-        this.client = client;
-        this.keyspace = keyspace;
+
         database = client.getDatabase(keyspace);
     }
 
@@ -411,23 +401,27 @@ public class MultipleTablesModel implements DataModel
 
         HashMap<String, Double> edgeCounts = new HashMap<>(); // Holds the total edge count at any point in the query range (e.g. [(30,2), (31,4), ..., (50,22)]
         HashMap<String, Double> vertexCounts = new HashMap<>(); // Holds the total vertex count at any point in the query range (e.g. [(30,4), (31,3), ..., (50,16)]
+        FindIterable<Document> vertices  = database.getCollection("vertex").
+                find(Filters.or(Filters.gte("_id.end",first) , Filters.lte("_id.start",last )))
+                .noCursorTimeout(true);
 
-        HashMap<String, ArrayList<String>> vertices = getAllAliveVertices(first, last);
+        for(int i = Integer.parseInt(first); i <= Integer.parseInt(last); i++){
+            vertexCounts.put("" + i, 0.0);
+        }
+        for(Document ver: vertices){
+            Document id = (Document) ver.get("_id");
+            String rowend = id.getString("end");
+            String rowstart = id.getString("start");
 
-        for (int i = Integer.parseInt(first); i <= Integer.parseInt(last); i++)
-        {
-            ArrayList<String> instanceVIDs = vertices.get("" + i);
-            if (instanceVIDs == null)
-            {
-                vertexCounts.put("" + i, 0.0);
-            } else
-            {
-                vertexCounts.put("" + i, (double) instanceVIDs.size());
+            int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
+            int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
+            for(int i = start; i <= end; i++){
+                vertexCounts.put("" + i, vertexCounts.get("" + i) + 1.0);
             }
         }
-
-        ConcurrentLinkedQueue<Document> rows = getAllEdgesAndFilterAlive(first, last);
-
+        FindIterable<Document> rows  = database.getCollection("edge_outgoing").
+                find(Filters.or(Filters.gte("_id.end",first) , Filters.lte("_id.start",last )))
+                .noCursorTimeout(true);
         tStart = System.nanoTime();
         for (Document row : rows)
         {
@@ -468,421 +462,7 @@ public class MultipleTablesModel implements DataModel
         System.out.println("Time required for processing and evaluating the AvgDegAll query: " + elapsedSeconds + " seconds.");
         return results;
     }
-/*
-    public List<Vertex> getBatchVertexInstances(Set<Integer> vids, String timestamp)
-    {
-        PreparedStatement statement_name = session.prepare("SELECT * FROM " + keyspace + ".vertex_name WHERE vid = ? AND timestamp <= ? LIMIT 1");
-        PreparedStatement statement_color = session.prepare("SELECT * FROM " + keyspace + ".vertex_color WHERE vid = ? AND timestamp <= ? LIMIT 1");
 
-        PreparedStatement statement_out_label = session.prepare("SELECT * FROM " + keyspace + ".edge_label_outgoing WHERE sourceID = ? AND timestamp <= ?");
-        PreparedStatement statement_out_weight = session.prepare("SELECT * FROM " + keyspace + ".edge_weight_outgoing WHERE sourceID = ? AND timestamp <= ?");
-        PreparedStatement statement_in_label = session.prepare("SELECT * FROM " + keyspace + ".edge_label_incoming WHERE targetID = ? AND timestamp <= ?");
-        PreparedStatement statement_in_weight = session.prepare("SELECT * FROM " + keyspace + ".edge_weight_incoming WHERE targetID = ? AND timestamp <= ?");
-
-        PreparedStatement statement_out = session.prepare("SELECT * FROM " + keyspace + ".edge_outgoing WHERE sourceID = ? AND start <= ?");
-        PreparedStatement statement_in = session.prepare("SELECT * FROM " + keyspace + ".edge_incoming WHERE targetID = ? AND start <= ?");
-
-        long tStart = System.nanoTime()();
-
-        final ExecutorService ceName = Executors.newSingleThreadExecutor();
-        final ExecutorService ceColor = Executors.newSingleThreadExecutor();
-        final ExecutorService ceOutLabel = Executors.newSingleThreadExecutor();
-        final ExecutorService ceOutWeight = Executors.newSingleThreadExecutor();
-        final ExecutorService ceInLabel = Executors.newSingleThreadExecutor();
-        final ExecutorService ceInWeight = Executors.newSingleThreadExecutor();
-        final ExecutorService ceOut = Executors.newSingleThreadExecutor();
-        final ExecutorService ceIn = Executors.newSingleThreadExecutor();
-
-        final CountDownLatch doneSignal = new CountDownLatch(vids.size() * 8); // The count of tables we are querying is 8
-
-        ConcurrentHashMap<String, String> map_vertex_name = new ConcurrentHashMap<String, String>();
-        ConcurrentHashMap<String, String> map_vertex_color = new ConcurrentHashMap<String, String>();
-
-        ConcurrentHashMap<String, Map<String, TreeMap<String, String>>> map_edge_out_label = new ConcurrentHashMap<String, Map<String, TreeMap<String, String>>>();
-        ConcurrentHashMap<String, Map<String, TreeMap<String, String>>> map_edge_out_weight = new ConcurrentHashMap<String, Map<String, TreeMap<String, String>>>();
-        ConcurrentHashMap<String, Map<String, TreeMap<String, String>>> map_edge_in_label = new ConcurrentHashMap<String, Map<String, TreeMap<String, String>>>();
-        ConcurrentHashMap<String, Map<String, TreeMap<String, String>>> map_edge_in_weight = new ConcurrentHashMap<String, Map<String, TreeMap<String, String>>>();
-
-        ConcurrentHashMap<String, ResultSet> map_edge_out = new ConcurrentHashMap<String, ResultSet>();
-        ConcurrentHashMap<String, ResultSet> map_edge_in = new ConcurrentHashMap<String, ResultSet>();
-
-        List<Vertex> results = new ArrayList<>();
-
-        for (Integer i : vids)
-        {
-            String s_i = Integer.toString(i);
-
-            ResultSetFuture resultSetFuture_name = session.executeAsync(statement_name.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_name,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    Row row = result.one();
-                    if (row != null)
-                    {
-                        String vid = row.getString("_id");
-                        String name = row.getString("name");
-                        map_vertex_name.put(vid, name);
-                    }
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceName
-            );
-
-            ResultSetFuture resultSetFuture_color = session.executeAsync(statement_color.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_color,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    Row row = result.one();
-                    if (row != null)
-                    {
-                        String vid = row.getString("_id");
-                        String color = row.getString("color");
-                        map_vertex_color.put(vid, color);
-                    }
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceColor
-            );
-
-            ResultSetFuture resultSetFuture_out_label = session.executeAsync(statement_out_label.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_out_label,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    Map<String, TreeMap<String, String>> all_attribute = new HashMap<String, TreeMap<String, String>>(); // [targetID, [timestamp,label] ]
-
-                    List<Row> rows = result.all();
-
-                    String sourceID = s_i;
-                    for (Row row : rows)
-                    {
-                        sourceID = row.getString("sourceID");
-                        String label = row.getString("label");
-                        String rowtimestamp = row.getString("timestamp");
-                        String ID = row.getString("targetID");
-
-                        if (!all_attribute.containsKey(ID))
-                        {
-                            TreeMap<String, String> temp = new TreeMap<String, String>();
-                            all_attribute.put(ID, temp);
-                        }
-                        TreeMap<String, String> changes = all_attribute.get(ID);
-                        changes.put(rowtimestamp, label);
-                        all_attribute.put(ID, changes);
-                    }
-
-                    map_edge_out_label.put(sourceID, all_attribute);
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceOutLabel
-            );
-
-            ResultSetFuture resultSetFuture_out_weight = session.executeAsync(statement_out_weight.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_out_weight,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    Map<String, TreeMap<String, String>> all_attribute = new HashMap<String, TreeMap<String, String>>();
-
-                    List<Row> rows = result.all();
-
-                    String sourceID = s_i;
-                    for (Row row : rows)
-                    {
-                        sourceID = row.getString("sourceID");
-                        String label = row.getString("weight");
-                        String rowtimestamp = row.getString("timestamp");
-                        String ID = row.getString("targetID");
-
-                        if (!all_attribute.containsKey(ID))
-                        {
-                            TreeMap<String, String> temp = new TreeMap<String, String>();
-                            all_attribute.put(ID, temp);
-                        }
-                        TreeMap<String, String> changes = all_attribute.get(ID);
-                        changes.put(rowtimestamp, label);
-                        all_attribute.put(ID, changes);
-                    }
-
-                    map_edge_out_weight.put(sourceID, all_attribute);
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceOutWeight
-            );
-
-            ResultSetFuture resultSetFuture_in_label = session.executeAsync(statement_in_label.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_in_label,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    Map<String, TreeMap<String, String>> all_attribute = new HashMap<String, TreeMap<String, String>>();
-
-                    List<Row> rows = result.all();
-
-                    String targetID = s_i;
-                    for (Row row : rows)
-                    {
-                        targetID = row.getString("targetID");
-                        String label = row.getString("label");
-                        String rowtimestamp = row.getString("timestamp");
-                        String ID = row.getString("sourceID");
-
-                        if (!all_attribute.containsKey(ID))
-                        {
-                            TreeMap<String, String> temp = new TreeMap<String, String>();
-                            all_attribute.put(ID, temp);
-                        }
-                        TreeMap<String, String> changes = all_attribute.get(ID);
-                        changes.put(rowtimestamp, label);
-                        all_attribute.put(ID, changes);
-                    }
-
-                    map_edge_in_label.put(targetID, all_attribute);
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceInLabel
-            );
-
-            ResultSetFuture resultSetFuture_in_weight = session.executeAsync(statement_in_weight.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_in_weight,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    Map<String, TreeMap<String, String>> all_attribute = new HashMap<String, TreeMap<String, String>>();
-
-                    List<Row> rows = result.all();
-
-                    String targetID = s_i;
-                    for (Row row : rows)
-                    {
-                        targetID = row.getString("targetID");
-                        String label = row.getString("weight");
-                        String rowtimestamp = row.getString("timestamp");
-                        String ID = row.getString("sourceID");
-
-                        if (!all_attribute.containsKey(ID))
-                        {
-                            TreeMap<String, String> temp = new TreeMap<String, String>();
-                            all_attribute.put(ID, temp);
-                        }
-                        TreeMap<String, String> changes = all_attribute.get(ID);
-                        changes.put(rowtimestamp, label);
-                        all_attribute.put(ID, changes);
-                    }
-
-                    map_edge_in_weight.put(targetID, all_attribute);
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceInWeight
-            );
-
-            ResultSetFuture resultSetFuture_out = session.executeAsync(statement_out.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_out,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    String sourceID = s_i;
-                    map_edge_out.put(sourceID, result);
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceOut
-            );
-
-            ResultSetFuture resultSetFuture_in = session.executeAsync(statement_in.bind(s_i, timestamp));
-            Futures.addCallback(resultSetFuture_in,
-                    new FutureCallback<ResultSet>()
-            {
-                @Override
-                public void onSuccess(ResultSet result)
-                {
-                    String targetID = s_i;
-                    map_edge_in.put(targetID, result);
-                    doneSignal.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable t)
-                {
-                    doneSignal.countDown();
-                }
-            },
-                    ceIn
-            );
-        }
-
-        try
-        {
-            doneSignal.await(); // Wait until all async queries have finished
-        } catch (InterruptedException ex)
-        {
-            Logger.getLogger(MultipleTablesModel.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        long tEnd = System.nanoTime()();
-        long tDelta = tEnd - tStart;
-        double elapsedSeconds = tDelta / 1000000000.0;
-        System.out.println("Time elapsed for fetching data: " + elapsedSeconds + " seconds");
-
-        tStart = System.nanoTime()();
-        for (Integer i : vids)
-        {
-            String vid = Integer.toString(i);
-
-            String vertex_name = map_vertex_name.get(vid);
-            String vertex_color = map_vertex_color.get(vid);
-
-            Map<String, TreeMap<String, String>> all_outgoing_labels = map_edge_out_label.get(vid);
-            Map<String, TreeMap<String, String>> all_outgoing_weights = map_edge_out_weight.get(vid);
-            Map<String, TreeMap<String, String>> all_incoming_labels = map_edge_in_label.get(vid);
-            Map<String, TreeMap<String, String>> all_incoming_weights = map_edge_in_weight.get(vid);
-
-            Map<String, Map<String, Edge>> allEdges = new HashMap<String, Map<String, Edge>>();
-
-            // First retrieve the outgoing edges of the vertex
-            ResultSet rs = map_edge_out.get(vid);
-
-            List<Row> rows = rs.all();
-
-            Map<String, Edge> outgoing_edges = new HashMap<String, Edge>();
-
-            for (Row row : rows)
-            {
-                String end = row.getString("end");
-                if (Integer.parseInt(timestamp) > Integer.parseInt(end))
-                {
-                    continue;
-                }
-                String start = row.getString("start");
-                String targetID = row.getString("targetID");
-                TreeMap<String, String> out_labels = all_outgoing_labels.get(targetID);
-                String label = getLastValue(out_labels, timestamp);
-                TreeMap<String, String> out_weights = all_outgoing_weights.get(targetID);
-                String weight = getLastValue(out_weights, timestamp);
-
-                Edge newedge = new Edge(label, weight, targetID, start, end);
-                outgoing_edges.put(targetID, newedge);
-            }
-
-            // Then retrieve the incoming edges of the vertex
-            rs = map_edge_in.get(vid);
-
-            rows = rs.all();
-
-            Map<String, Edge> incoming_edges = new HashMap<String, Edge>();
-
-            for (Row row : rows)
-            {
-                String end = row.getString("end");
-                if (Integer.parseInt(timestamp) > Integer.parseInt(end))
-                {
-                    continue;
-                }
-                String start = row.getString("start");
-                String sourceID = row.getString("sourceID");
-                TreeMap<String, String> in_labels = all_incoming_labels.get(sourceID);
-                String label = getLastValue(in_labels, timestamp);
-                TreeMap<String, String> in_weights = all_incoming_weights.get(sourceID);
-                String weight = getLastValue(in_weights, timestamp);
-
-                Edge newedge = new Edge(label, weight, sourceID, start, end);
-                incoming_edges.put(sourceID, newedge);
-            }
-
-            allEdges.put("outgoing_edges", outgoing_edges);
-            allEdges.put("incoming_edges", incoming_edges);
-
-            Vertex v = new Vertex();
-            v.setVid(vid);
-            v.setTimestamp(timestamp);
-            v.setOutgoing_edges(allEdges.get("outgoing_edges"));
-            v.setIncoming_edges(allEdges.get("incoming_edges"));
-            v.setValue("name", vertex_name);
-            v.setValue("color", vertex_color);
-
-            results.add(v);
-        }
-        ceName.shutdown();
-        ceColor.shutdown();
-        ceOutLabel.shutdown();
-        ceOutWeight.shutdown();
-        ceInLabel.shutdown();
-        ceInWeight.shutdown();
-        ceOut.shutdown();
-        ceIn.shutdown();
-
-        tEnd = System.nanoTime()();
-        tDelta = tEnd - tStart;
-        elapsedSeconds = tDelta / 1000000000.0;
-        System.out.println("Time elapsed for transforming the data: " + elapsedSeconds + " seconds.");
-
-        return results;
-    }
-*/
     @Override
     public HashMap<String, HashMap<String, Integer>> getDegreeDistribution(String first, String last)
     {
@@ -964,15 +544,16 @@ public class MultipleTablesModel implements DataModel
         long tStart, tEnd, tDelta;
 
         HashMap<String, HashMap<String, Double>> vertexDegreeInAllInstances = new HashMap<>(); // Holds for each vertex a map containing (Instance,Vertex_count) pairs
-
-        ConcurrentLinkedQueue<Document> rows = getAllEdgesAndFilterAlive(first, last);
-
+        FindIterable<Document> rows  = database.getCollection("edge_outgoing").
+                find(Filters.or(Filters.gte("_id.end",first) , Filters.lte("_id.start",last )))
+                .noCursorTimeout(true);
         tStart = System.nanoTime();
         for (Document row : rows)
         {
             Document id = (Document) row.get("_id");
             String rowend = id.getString("end");
-            if (Integer.parseInt(rowend) < Integer.parseInt(first)) // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
+            // That means that the diachronic node's "start" and "end" time instances were BOTH before our query instance
+            if (Integer.parseInt(rowend) < Integer.parseInt(first)) 
             {
                 continue;
             }
@@ -980,8 +561,10 @@ public class MultipleTablesModel implements DataModel
             String rowstart = id.getString("start");
             String vid = id.getString("sourceID");
 
-            int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); // Only report values that are after both "first" and the diachronic node's "rowstart"
-            int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend)); // Only report values that are before both "last" and the diachronic node's "rowend"
+            // Only report values that are after both "first" and the diachronic node's "rowstart"
+            int start = Math.max(Integer.parseInt(first), Integer.parseInt(rowstart)); 
+            // Only report values that are before both "last" and the diachronic node's "rowend"
+            int end = Math.min(Integer.parseInt(last), Integer.parseInt(rowend));
 
             if (!vertexDegreeInAllInstances.containsKey(vid))
             {
@@ -1001,13 +584,13 @@ public class MultipleTablesModel implements DataModel
         HashMap<String, HashMap<String, Integer>> results = new HashMap<>();
         for (String s_vid : vertexDegreeInAllInstances.keySet())
         {
-            HashMap<Integer, Integer> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
+            HashMap<String, Double> s_vertexDegrees = vertexDegreeInAllInstances.get(s_vid);
 
-            for (Integer instance : s_vertexDegrees.keySet())
+            for (String instance : s_vertexDegrees.keySet())
             {
-                Integer degree = s_vertexDegrees.get(instance);
-                HashMap<String, Integer> degreeDistr = results.get(instance.toString());
-                if (degreeDistr ==null)
+                Double degree = s_vertexDegrees.get(instance);
+                HashMap<String, Integer> degreeDistr = results.get(instance);
+                if (degreeDistr == null)
                 {
                     degreeDistr = new HashMap<>();
                 }
@@ -1088,7 +671,7 @@ public class MultipleTablesModel implements DataModel
 
         tStart = System.nanoTime();
         FindIterable<Document> result = database.getCollection("edge_outgoing").find(Filters.and(
-                Filters.eq("id_sourceID",vid), Filters.lte("_id.start",last )))
+                Filters.eq("_id.sourceID",vid), Filters.lte("_id.start",last )))
                 .projection(Projections.include("_id.end", "_id.targetID")).noCursorTimeout(true);
 
         tEnd = System.nanoTime();
@@ -1313,142 +896,7 @@ public class MultipleTablesModel implements DataModel
         insert("vertex_color", values);
         values.clear();
     }
-/*
-    private void parseFirstSnapshot(String input, int snap_count) // Used to bulk load data instead of using the typical methods
-    {
-        try
-        {
-            BufferedReader file = new BufferedReader(new FileReader(input));
-            String line;
-            String tokens[];
 
-            TreeMap<String, Vertex> vertices = new TreeMap<String, Vertex>();
-
-            while ((line = file.readLine()) != null)
-            {
-                if (line.startsWith("mkdir") || line.startsWith("cd") || line.startsWith("time") || line.startsWith("string") || line.startsWith("double") || line.startsWith("shutdown"))
-                {
-                    continue;
-                }
-
-                if (line.equals("graph 1 0") || line.equals("graph 1")) // As soon as we've reached the second snapshot, stop
-                {
-                    break;
-                }
-
-                if (line.equals("use " + keyspace + ""))
-                {
-                    session.execute("USE " + keyspace + ";");
-                } else if (line.startsWith("vertex"))
-                {
-                    tokens = line.split(" ");
-                    String verID = tokens[1];
-                    String name, color;
-                    if (tokens.length >= 3)
-                    {
-                        name = tokens[2].split("=")[1].replaceAll("\"", "");
-                    } else
-                    {
-                        name = getRandomString(4);
-                    }
-                    if (tokens.length == 4)
-                    {
-                        color = tokens[3].split("=")[1].replaceAll("\"", "");
-                    } else
-                    {
-                        color = getRandomString(4);
-                    }
-                    Vertex ver = new Vertex();
-                    ver.setVid(verID);
-                    ver.setTimestamp("00000000");
-                    HashMap<String, String> attributes = new HashMap<String, String>();
-                    attributes.put("name", name);
-                    attributes.put("color", color);
-                    ver.setAttributes(attributes);
-                    vertices.put(verID, ver);
-                } else if (line.startsWith("edge"))
-                {
-                    tokens = line.split(" ");
-                    String sourceID = tokens[1];
-                    String targetID = tokens[2];
-                    String weight;
-                    if (tokens.length == 4)
-                    {
-                        weight = tokens[3].split("=")[1];
-                    } else
-                    {
-                        weight = "" + Math.random();
-                    }
-
-                    Vertex sVer = vertices.get(sourceID);
-                    sVer.addOutgoingEdge(targetID, new Edge("testlabel", weight, targetID, "00000000", DataModel.padWithZeros("" + snap_count)));
-                    Vertex tVer = vertices.get(targetID);
-                    tVer.addIncomingEdge(sourceID, new Edge("testlabel", weight, sourceID, "00000000", DataModel.padWithZeros("" + snap_count)));
-                    vertices.put(sourceID, sVer);
-                    vertices.put(targetID, tVer);
-                }
-            }
-            file.close();
-
-            for (String vid : vertices.keySet())
-            {
-                session.executeAsync("INSERT INTO " + keyspace + ".vertex");
-            }
-
-            for (String vid : vertices.keySet())
-            {
-                Vertex ver = vertices.get(vid);
-                HashMap<String, String> attrs = ver.getAttributes();
-
-                String start = ver.getTimestamp();
-                String end = DataModel.padWithZeros("" + snap_count);
-                String name = attrs.get("name");
-                String color = attrs.get("color");
-
-                HashMap<String, Edge> allIncEdges = ver.getIncoming_edges();
-                HashMap<String, Edge> allOutEdges = ver.getOutgoing_edges();
-
-                String allIncEdgesstr = "";
-                for (String source : allIncEdges.keySet())
-                {
-                    Edge edge = allIncEdges.get(source);
-                    allIncEdgesstr = allIncEdgesstr.concat("'" + edge.otherEnd + "': [");
-                    allIncEdgesstr = allIncEdgesstr.concat(edge.toString()).concat("], ");
-                }
-                if (!allIncEdgesstr.equals(""))
-                {
-                    allIncEdgesstr = allIncEdgesstr.substring(0, allIncEdgesstr.length() - 2);
-                }
-
-                String allOutEdgesstr = "";
-                for (String target : allOutEdges.keySet())
-                {
-                    Edge edge = allOutEdges.get(target);
-                    allOutEdgesstr = allOutEdgesstr.concat("'" + edge.otherEnd + "': [");
-                    allOutEdgesstr = allOutEdgesstr.concat(edge.toString()).concat("], ");
-                }
-                if (!allOutEdgesstr.equals(""))
-                {
-                    allOutEdgesstr = allOutEdgesstr.substring(0, allOutEdgesstr.length() - 2);
-                }
-
-                session.execute("INSERT INTO " + keyspace + ".dianode (vid, start, end, name, color, incoming_edges, outgoing_edges)" //Assume only one edge per vertex pair in graph 0
-                        + "VALUES ('" + ver.getVid() + "', '" + start + "', '" + end + "', "
-                        + "[{value: '" + name + "', start: '00000000', end: '" + DataModel.padWithZeros("" + snap_count) + "'}], "
-                        + "[{value: '" + color + "', start: '00000000', end: '" + DataModel.padWithZeros("" + snap_count) + "'}], "
-                        + "{" + allIncEdgesstr + "}, "
-                        + "{" + allOutEdgesstr + "}"
-                        + ");");
-            }
-        } catch (FileNotFoundException ex)
-        {
-            Logger.getLogger(SingleTableModel.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex)
-        {
-            Logger.getLogger(SingleTableModel.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-*/
     @Override
     public void parseInput(String input)
     {
